@@ -358,7 +358,7 @@ function abrirFormDoc(tipo){
         <label>Origen *</label>
         <select id="fOrigen" onchange="autoDestino()">
           <option value="">Selecciona...</option>
-          <option value="Borla">Borla</option>
+          <option value="Morla">Morla</option>
           <option value="Río de Janeiro">Río de Janeiro</option>
         </select>
       </div>
@@ -366,7 +366,7 @@ function abrirFormDoc(tipo){
         <label>Destino *</label>
         <select id="fDestino" onchange="autoOrigen()">
           <option value="">Selecciona...</option>
-          <option value="Borla">Borla</option>
+          <option value="Morla">Morla</option>
           <option value="Río de Janeiro">Río de Janeiro</option>
         </select>
       </div>
@@ -411,15 +411,15 @@ function abrirFormDoc(tipo){
 function autoDestino(){
   const o = document.getElementById('fOrigen').value;
   const d = document.getElementById('fDestino');
-  if(o === 'Borla') d.value = 'Río de Janeiro';
-  else if(o === 'Río de Janeiro') d.value = 'Borla';
+  if(o === 'Morla') d.value = 'Río de Janeiro';
+  else if(o === 'Río de Janeiro') d.value = 'Morla';
 }
 
 function autoOrigen(){
   const d = document.getElementById('fDestino').value;
   const o = document.getElementById('fOrigen');
-  if(d === 'Borla') o.value = 'Río de Janeiro';
-  else if(d === 'Río de Janeiro') o.value = 'Borla';
+  if(d === 'Morla') o.value = 'Río de Janeiro';
+  else if(d === 'Río de Janeiro') o.value = 'Morla';
 }
 
 async function onFile(event){
