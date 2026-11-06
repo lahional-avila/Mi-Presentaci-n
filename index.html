@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html lang="es-CL">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover">
+<meta name="theme-color" content="#0a0a10">
+<title>Acceso · Sistema Bodega</title>
+<style>
+:root{
+  --yellow:#facc15;--yellow-d:#fbbf24;--orange:#f97316;
+  --bg:#0a0a10;--panel:#16161f;--border:#2a2a38;
+  --text:#f1f5f9;--muted:#94a3b8;--danger:#ef4444;--success:#10b981;
+}
+*{margin:0;padding:0;box-sizing:border-box;font-family:system-ui,-apple-system,'Segoe UI',sans-serif}
+body{
+  background:
+    radial-gradient(circle at 20% 0%,rgba(250,204,21,.14),transparent 42%),
+    radial-gradient(circle at 100% 100%,rgba(249,115,22,.12),transparent 42%),
+    var(--bg);
+  color:var(--text);min-height:100dvh;font-size:14px;
+  display:flex;align-items:center;justify-content:center;
+  padding:20px;-webkit-font-smoothing:antialiased;
+}
+.box{width:100%;max-width:420px;position:relative}
+
+.brand{text-align:center;margin-bottom:26px}
+.brand-icon{
+  width:64px;height:64px;margin:0 auto 14px;
+  display:flex;align-items:center;justify-content:center;
+  font-size:32px;border-radius:18px;
+  background:linear-gradient(135deg,rgba(250,204,21,.22),rgba(249,115,22,.12));
+  border:1px solid rgba(250,204,21,.3);
+}
+.brand h1{font-size:1.25rem;font-weight:800;letter-spacing:-.02em}
+.brand h1 span{
+  background:linear-gradient(135deg,var(--yellow),var(--orange));
+  -webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;
+}
+.brand .sub{font-size:.72rem;color:var(--muted);margin-top:4px}
+
+.card{
+  background:var(--panel);border:1px solid var(--border);
+  border-radius:18px;padding:26px 22px;margin-bottom:16px;
+}
+.card h2{font-size:.95rem;font-weight:800;margin-bottom:16px}
+
+.step{display:none}
+.step.active{display:block}
+
+/* Selector rol */
+.roles{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.role-btn{
+  background:#0f0f18;border:2px solid var(--border);
+  border-radius:14px;padding:22px 12px;
+  cursor:pointer;transition:.2s;font-family:inherit;color:var(--text);
+  display:flex;flex-direction:column;align-items:center;gap:6px;
+}
+.role-btn:hover{border-color:var(--yellow);transform:translateY(-2px)}
+.role-btn .r-icon{font-size:32px;line-height:1}
+.role-btn .r-name{font-weight:800;font-size:.9rem}
+.role-btn .r-desc{font-size:.68rem;color:var(--muted);text-align:center;line-height:1.3}
+
+/* Form */
+.field{margin-bottom:12px}
+.field label{
+  display:block;font-size:.72rem;font-weight:700;color:var(--muted);
+  text-transform:uppercase;letter-spacing:.05em;margin-bottom:5px;
+}
+.field input{
+  width:100%;padding:11px 13px;
+  background:#0a0a10;border:1px solid var(--border);
+  border-radius:10px;color:var(--text);font-size:.9rem;
+  font-family:inherit;outline:none;transition:.2s;
+}
+.field input:focus{border-color:var(--yellow)}
+
+.btn{
+  width:100%;padding:13px;border:none;border-radius:11px;
+  font-weight:800;font-size:.9rem;cursor:pointer;
+  transition:.2s;font-family:inherit;
+  background:var(--yellow);color:#0a0a10;
+}
+.btn:hover:not(:disabled){background:var(--yellow-d);transform:translateY(-1px)}
+.btn:disabled{opacity:.5;cursor:wait}
+.btn-ghost{background:transparent;color:var(--text);border:1px solid var(--border)}
+.btn-ghost:hover{background:#0a0a10}
+
+.back-btn{
+  background:transparent;border:none;color:var(--muted);
+  font-size:.8rem;font-weight:600;cursor:pointer;
+  padding:4px 0;margin-bottom:12px;font-family:inherit;
+}
+.back-btn:hover{color:var(--yellow)}
+
+.badge-role{
+  display:inline-flex;align-items:center;gap:6px;
+  padding:5px 12px;margin-bottom:14px;
+  background:rgba(250,204,21,.1);border:1px solid rgba(250,204,21,.25);
+  border-radius:100px;font-size:.75rem;font-weight:700;color:var(--yellow);
+}
+
+.hint{
+  font-size:.72rem;color:var(--muted);text-align:center;
+  margin-top:14px;line-height:1.5;
+}
+.hint strong{color:var(--yellow)}
+
+/* Success */
+.success-icon{
+  width:72px;height:72px;margin:4px auto 18px;
+  display:flex;align-items:center;justify-content:center;
+  font-size:36px;color:white;border-radius:50%;
+  background:var(--success);
+}
+.success-title{text-align:center;font-size:1.25rem;font-weight:800;margin-bottom:4px}
+.success-user{text-align:center;font-size:1rem;color:var(--yellow);font-weight:700}
+.success-role{
+  text-align:center;font-size:.72rem;color:var(--muted);
+  text-transform:uppercase;letter-spacing:.06em;margin:4px 0 22px;
+}
+
+.footer{text-align:center;font-size:.7rem;color:#475569;line-height:1.6}
+.footer .copy{display:block;margin-top:4px;color:#334155}
+
+.toast{
+  position:fixed;bottom:20px;left:50%;
+  transform:translateX(-50%) translateY(80px);
+  background:var(--panel);border:1px solid var(--border);
+  color:var(--text);padding:10px 18px;border-radius:8px;
+  font-size:.82rem;font-weight:600;
+  opacity:0;transition:.25s;pointer-events:none;z-index:999;max-width:90vw;
+}
+.toast.show{transform:translateX(-50%) translateY(0);opacity:1}
+.toast.error{border-color:var(--danger)}
+.toast.success{border-color:var(--success)}
+</style>
+</head>
+<body>
+
+<div class="box">
+  <div class="brand">
+    <div class="brand-icon">📦</div>
+    <h1>Sistema de Inventario <span>Bodega</span></h1>
+    <div class="sub">v1.0 · Acceso al sistema</div>
+  </div>
+
+  <div class="card">
+    <!-- STEP 1: Rol -->
+    <div class="step active" id="stepRole">
+      <h2>¿Cómo vas a ingresar?</h2>
+      <div class="roles">
+        <button class="role-btn" onclick="elegirRol('ventas')">
+          <div class="r-icon">🛒</div>
+          <div class="r-name">Ventas</div>
+          <div class="r-desc">Subir boletas y consultar</div>
+        </button>
+        <button class="role-btn" onclick="elegirRol('bodega')">
+          <div class="r-icon">📦</div>
+          <div class="r-name">Bodega</div>
+          <div class="r-desc">Inventario y picking</div>
+        </button>
+      </div>
+    </div>
+
+    <!-- STEP 2: Login -->
+    <div class="step" id="stepLogin">
+      <button class="back-btn" onclick="volverRol()">← Cambiar</button>
+      <div class="badge-role" id="badgeRole">🛒 Ventas</div>
+      <form onsubmit="login(event)">
+        <div class="field">
+          <label>Usuario</label>
+          <input type="text" id="inpUser" placeholder="Tu usuario" autocomplete="username" autocapitalize="none">
+        </div>
+        <div class="field">
+          <label>Contraseña</label>
+          <input type="password" id="inpPass" placeholder="••••••••" autocomplete="current-password">
+        </div>
+        <button type="submit" class="btn" id="btnLogin">Ingresar</button>
+      </form>
+      <p class="hint" id="loginHint">Primera vez: usuario <strong>admin</strong> · contraseña <strong>admin</strong></p>
+    </div>
+
+    <!-- STEP 3: Éxito -->
+    <div class="step" id="stepOk">
+      <div class="success-icon">✓</div>
+      <div class="success-title">Bienvenido</div>
+      <div class="success-user" id="okUser"></div>
+      <div class="success-role" id="okRole"></div>
+      <button class="btn" onclick="irAlPanel()">Ir al panel →</button>
+      <button class="btn btn-ghost" style="margin-top:8px" onclick="logout()">Cerrar sesión</button>
+    </div>
+  </div>
+
+  <div class="footer">
+    Sistema de Inventario Bodega v1.0
+    <span class="copy">© 2026 Lahional Ávila · Todos los derechos reservados</span>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* ============================================================
+   ALMACENAMIENTO SEGURO
+   ============================================================ */
+const Store = {
+  get(k){ try{ return localStorage.getItem(k)||sessionStorage.getItem(k); }catch{ return null; } },
+  set(k,v,perm=true){ try{ perm?localStorage.setItem(k,v):sessionStorage.setItem(k,v); }catch{} },
+  remove(k){ try{ localStorage.removeItem(k); sessionStorage.removeItem(k); }catch{} }
+};
+
+/* Obfuscación básica (no es cifrado real, solo evita lectura casual) */
+function obf(s){ try{ return btoa(unescape(encodeURIComponent(s))); }catch{ return s; } }
+function deobf(s){ try{ return decodeURIComponent(escape(atob(s))); }catch{ return s; } }
+
+/* ============================================================
+   SEMILLA DE USUARIO ADMIN (si no existe ninguno)
+   ============================================================ */
+function seedUsuarios(){
+  let users = Store.get('vca_usuarios');
+  if(!users){
+    const inicial = [
+      { user:'admin', pass: obf('admin'), rol:'admin', nombre:'Administrador' }
+    ];
+    Store.set('vca_usuarios', JSON.stringify(inicial));
+  }
+}
+
+/* ============================================================
+   SESIÓN
+   ============================================================ */
+const SESSION_KEY = 'vca_session';
+let ROL_SEL = null;
+
+function elegirRol(rol){
+  ROL_SEL = rol;
+  document.getElementById('badgeRole').innerHTML =
+    (rol === 'ventas' ? '🛒 Ventas' : '📦 Bodega');
+  document.getElementById('stepRole').classList.remove('active');
+  document.getElementById('stepLogin').classList.add('active');
+  setTimeout(()=>document.getElementById('inpUser').focus(), 150);
+}
+
+function volverRol(){
+  ROL_SEL = null;
+  document.getElementById('stepLogin').classList.remove('active');
+  document.getElementById('stepRole').classList.add('active');
+  document.getElementById('inpUser').value = '';
+  document.getElementById('inpPass').value = '';
+}
+
+/* ============================================================
+   LOGIN
+   ============================================================ */
+function login(e){
+  e.preventDefault();
+  const user = document.getElementById('inpUser').value.trim();
+  const pass = document.getElementById('inpPass').value;
+
+  if(!user || !pass) return toast('Completa usuario y contraseña','error');
+
+  let usuarios = [];
+  try { usuarios = JSON.parse(Store.get('vca_usuarios') || '[]'); } catch {}
+
+  const found = usuarios.find(u =>
+    u.user.toLowerCase() === user.toLowerCase() &&
+    deobf(u.pass) === pass
+  );
+
+  if(!found){
+    return toast('Usuario o contraseña incorrectos','error');
+  }
+
+  const sesion = {
+    user: found.user,
+    nombre: found.nombre || found.user,
+    rol: found.rol || ROL_SEL,          // admin | ventas | bodega
+    rolElegido: ROL_SEL,                 // lo que eligió en la puerta
+    loginAt: new Date().toISOString()
+  };
+  Store.set(SESSION_KEY, JSON.stringify(sesion));
+
+  mostrarExito(sesion);
+}
+
+function mostrarExito(s){
+  document.getElementById('stepLogin').classList.remove('active');
+  document.getElementById('stepOk').classList.add('active');
+  document.getElementById('okUser').textContent = s.nombre || s.user;
+  const rolMostrar = s.rolElegido === 'ventas' ? '🛒 Ventas' : '📦 Bodega';
+  document.getElementById('okRole').textContent = rolMostrar;
+}
+
+function irAlPanel(){
+  const raw = Store.get(SESSION_KEY);
+  if(!raw) return toast('Sesión perdida','error');
+  const s = JSON.parse(raw);
+  const pagina = s.rolElegido === 'ventas' ? 'vendedores.html' : 'bodega.html';
+  window.location.href = pagina;
+}
+
+function logout(){
+  Store.remove(SESSION_KEY);
+  volverRol();
+  document.getElementById('stepOk').classList.remove('active');
+  document.getElementById('stepRole').classList.add('active');
+}
+
+/* ============================================================
+   TOAST
+   ============================================================ */
+function toast(msg, tipo='info'){
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'toast show ' + (tipo==='error'?'error':tipo==='success'?'success':'');
+  clearTimeout(t._t);
+  t._t = setTimeout(()=>t.classList.remove('show'), 2800);
+}
+
+/* ============================================================
+   INIT
+   ============================================================ */
+window.addEventListener('DOMContentLoaded', () => {
+  seedUsuarios();
+
+  // Auto-login si ya hay sesión
+  const raw = Store.get(SESSION_KEY);
+  if(raw){
+    try{
+      const s = JSON.parse(raw);
+      if(s && s.user){
+        ROL_SEL = s.rolElegido || 'bodega';
+        mostrarExito(s);
+        return;
+      }
+    }catch{}
+  }
+
+  // Enter en usuario → foco a contraseña
+  document.getElementById('inpUser').addEventListener('keydown', e => {
+    if(e.key === 'Enter'){ e.preventDefault(); document.getElementById('inpPass').focus(); }
+  });
+});
+</script>
+</body>
+</html>
