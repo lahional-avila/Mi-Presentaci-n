@@ -1,17 +1,915 @@
-{
-  id: "BOL-IN-001",                // o FAC/TIC/TRA + IN/PO
-  tipo: "boleta",                   // boleta|factura|ticket|transferencia
-  tipoEntrega: "inmediata",        // inmediata|posterior
-  numBoleta: "001234",              // según tipo
-  numFactura: null,
-  numOut: null, numSO: null,
-  origen: null, destino: null, conductor: null,
-  empresa: "Astudillo E Ibacache...",
-  rut: "76425936K",
-  items: [...],
-  archivo: "picking.pdf",
-  pdfBase64: "data:application/pdf;base64,...",  // ⬅️ NUEVO
-  usuario: "vendedor1",
-  fecha: "2026-11-05T...",
-  estado: "pendiente"
+<!DOCTYPE html>
+<html lang="es-CL">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover">
+<meta name="theme-color" content="#0a0a10">
+<title>Panel Vendedores · Sistema Bodega</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<style>
+:root{
+  --yellow:#facc15;--yellow-d:#fbbf24;--orange:#f97316;
+  --bg:#0a0a10;--panel:#16161f;--border:#2a2a38;
+  --text:#f1f5f9;--muted:#94a3b8;--danger:#ef4444;--success:#10b981;--blue:#3b82f6;
 }
+*{margin:0;padding:0;box-sizing:border-box;font-family:system-ui,-apple-system,'Segoe UI',sans-serif}
+body{
+  background:
+    radial-gradient(circle at 20% 0%,rgba(250,204,21,.1),transparent 45%),
+    radial-gradient(circle at 100% 100%,rgba(249,115,22,.08),transparent 45%),
+    var(--bg);
+  color:var(--text);min-height:100dvh;font-size:14px;
+  -webkit-font-smoothing:antialiased;overflow-x:hidden;
+}
+.header{background:#0f0f18;border-bottom:1px solid var(--border);padding:12px 16px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:50}
+.header h1{font-size:1rem;font-weight:800}
+.header h1 span{color:var(--yellow)}
+.header .sub{font-size:.68rem;color:var(--muted);margin-top:1px}
+.btn-logout{padding:6px 12px;border-radius:8px;border:1px solid rgba(239,68,68,.3);background:rgba(239,68,68,.08);color:#f87171;font-size:.75rem;font-weight:700;cursor:pointer;font-family:inherit}
+.btn-logout:hover{background:rgba(239,68,68,.15)}
+
+.main{max-width:780px;margin:0 auto;padding:20px 16px}
+.menu-title{font-size:.7rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:12px;padding-left:4px}
+.menu-grid{display:grid;grid-template-columns:1fr;gap:12px;margin-bottom:22px}
+.menu-card{
+  background:var(--panel);border:1px solid var(--border);
+  border-radius:16px;padding:26px 20px;cursor:pointer;
+  transition:.2s;font-family:inherit;color:var(--text);
+  display:flex;flex-direction:row;align-items:center;gap:16px;text-align:left;
+}
+.menu-card:hover{border-color:var(--yellow);transform:translateY(-2px)}
+.menu-card .icon{font-size:36px;line-height:1;flex-shrink:0}
+.menu-card .text{flex:1;min-width:0}
+.menu-card .name{font-size:1.05rem;font-weight:800;margin-bottom:3px}
+.menu-card .desc{font-size:.78rem;color:var(--muted);line-height:1.35}
+
+.panel{display:none}
+.panel.active{display:block}
+
+.card{background:var(--panel);border:1px solid var(--border);border-radius:16px;padding:20px 16px;margin-bottom:14px}
+.card h2{font-size:.95rem;font-weight:800;margin-bottom:4px;display:flex;align-items:center;gap:8px}
+.card h2 .icon{font-size:20px}
+.card .help{font-size:.75rem;color:var(--muted);margin-bottom:14px;line-height:1.5}
+
+.back-btn{background:transparent;border:none;color:var(--muted);font-size:.8rem;font-weight:600;cursor:pointer;padding:4px 0;margin-bottom:10px;font-family:inherit}
+.back-btn:hover{color:var(--yellow)}
+
+.tipos-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.tipo-doc{
+  background:#0a0a10;border:2px solid var(--border);border-radius:14px;
+  padding:22px 12px;cursor:pointer;transition:.2s;font-family:inherit;color:var(--text);
+  display:flex;flex-direction:column;align-items:center;gap:6px;text-align:center;
+}
+.tipo-doc:hover{border-color:var(--yellow);transform:translateY(-2px);background:rgba(250,204,21,.05)}
+.tipo-doc .td-icon{font-size:30px}
+.tipo-doc .td-name{font-size:.88rem;font-weight:800}
+.tipo-doc .td-desc{font-size:.65rem;color:var(--muted);line-height:1.3}
+
+.drop{border:2px dashed var(--border);border-radius:12px;padding:28px 14px;text-align:center;cursor:pointer;transition:.2s}
+.drop:hover{border-color:var(--yellow);background:rgba(250,204,21,.04)}
+.drop .d-icon{font-size:32px;margin-bottom:6px;opacity:.7}
+.drop .d-title{font-weight:700;margin-bottom:3px}
+.drop .d-hint{font-size:.72rem;color:var(--muted)}
+.drop input{display:none}
+
+.actions-btns{display:none;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px}
+.actions-btns.show{display:grid}
+.act-btn{
+  padding:16px 12px;border-radius:12px;border:2px solid;
+  background:transparent;cursor:pointer;font-family:inherit;
+  color:var(--text);transition:.2s;
+  display:flex;flex-direction:column;align-items:center;gap:5px;text-align:center;
+}
+.act-btn.inmediata{border-color:var(--orange);background:rgba(249,115,22,.06)}
+.act-btn.inmediata:hover{background:rgba(249,115,22,.14);transform:translateY(-2px)}
+.act-btn.posterior{border-color:var(--muted);background:rgba(148,163,184,.04)}
+.act-btn.posterior:hover{background:rgba(148,163,184,.09);border-color:var(--yellow);transform:translateY(-2px)}
+.act-btn .a-icon{font-size:24px}
+.act-btn .a-title{font-size:.85rem;font-weight:800}
+.act-btn.inmediata .a-title{color:#fb923c}
+.act-btn.posterior .a-title{color:#cbd5e1}
+.act-btn .a-desc{font-size:.68rem;color:var(--muted);line-height:1.3}
+
+.field{margin-bottom:12px}
+.field label{display:block;font-size:.7rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px}
+.field input,.field select{width:100%;padding:10px 12px;background:#0a0a10;border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:.88rem;font-family:inherit;outline:none;transition:.2s}
+.field input:focus,.field select:focus{border-color:var(--yellow)}
+.row-2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+
+.prod-header,.prod-row{display:grid;grid-template-columns:85px 1fr 70px 28px;gap:6px;align-items:center}
+.prod-header{font-size:.65rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;padding:0 0 6px;border-bottom:1px solid var(--border);margin-bottom:6px}
+.prod-row{margin-bottom:6px}
+.prod-row input{width:100%;padding:7px 9px;background:#0a0a10;border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:.8rem;font-family:inherit;outline:none}
+.prod-row input:focus{border-color:var(--yellow)}
+.prod-row input.qty{text-align:right}
+.prod-row .del{background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.3);color:#f87171;border-radius:6px;width:28px;height:28px;cursor:pointer;font-size:.85rem;display:flex;align-items:center;justify-content:center}
+.prod-row .del:hover{background:rgba(239,68,68,.2)}
+
+.add-prod{width:100%;padding:9px;margin-top:6px;background:rgba(250,204,21,.06);border:1px dashed rgba(250,204,21,.3);border-radius:8px;color:var(--yellow);font-weight:700;font-size:.78rem;cursor:pointer;font-family:inherit;transition:.2s}
+.add-prod:hover{background:rgba(250,204,21,.14)}
+
+.btn{padding:11px 16px;border-radius:9px;border:none;font-weight:700;font-size:.85rem;cursor:pointer;font-family:inherit;transition:.2s;display:inline-flex;align-items:center;justify-content:center;gap:6px}
+.btn-primary{background:var(--yellow);color:#0a0a10}
+.btn-primary:hover:not(:disabled){background:var(--yellow-d)}
+.btn-primary:disabled{opacity:.4;cursor:not-allowed}
+.btn-success{background:var(--success);color:white}
+.btn-success:hover:not(:disabled){background:#059669}
+.btn-ghost{background:transparent;color:var(--text);border:1px solid var(--border)}
+.btn-ghost:hover{background:#0a0a10}
+.btn-row{display:flex;gap:8px;margin-top:14px}
+.btn-row .btn{flex:1}
+
+.search-wrap{position:relative;margin-bottom:12px}
+.search-wrap input{width:100%;padding:11px 12px 11px 38px;background:#0a0a10;border:1px solid var(--border);border-radius:10px;color:var(--text);font-size:.88rem;font-family:inherit;outline:none}
+.search-wrap input:focus{border-color:var(--yellow)}
+.search-wrap .s-icon{position:absolute;left:12px;top:50%;transform:translateY(-50%);font-size:1rem;opacity:.5}
+
+.result-card{background:#0a0a10;border:1px solid rgba(250,204,21,.15);border-radius:12px;padding:14px;margin-bottom:10px}
+.result-card .rc-code{font-size:.9rem;font-weight:800;color:var(--yellow);margin-bottom:2px}
+.result-card .rc-desc{font-size:.78rem;color:var(--muted);margin-bottom:10px}
+
+.stock-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding-top:10px;border-top:1px solid var(--border)}
+.stock-box{background:rgba(255,255,255,.02);border:1px solid var(--border);border-radius:8px;padding:10px 12px;text-align:center}
+.stock-box.sistema{border-color:rgba(250,204,21,.25)}
+.stock-box.verificado{border-color:rgba(16,185,129,.25);cursor:pointer;transition:.15s}
+.stock-box.verificado:hover{background:rgba(16,185,129,.08)}
+.stock-box.verificado.vacio{cursor:default;opacity:.5}
+.stock-box .sb-num{font-size:1.4rem;font-weight:900;line-height:1;display:flex;align-items:center;justify-content:center;gap:6px}
+.stock-box.sistema .sb-num{color:var(--yellow)}
+.stock-box.verificado .sb-num{color:var(--success)}
+.stock-box.verificado.vacio .sb-num{color:var(--muted)}
+.stock-box .sb-lbl{font-size:.6rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-top:4px}
+.stock-box .sb-check{display:inline-flex;align-items:center;justify-content:center;width:16px;height:16px;border-radius:50%;background:var(--success);color:white;font-size:.7rem;font-weight:900}
+.stock-box .sb-check.empty{background:var(--border);color:var(--muted)}
+
+.stock-metros{grid-column:1/-1;font-size:.72rem;color:var(--muted);text-align:center;padding:8px;background:rgba(250,204,21,.05);border-radius:6px;margin-top:6px;border:1px dashed rgba(250,204,21,.2)}
+.stock-metros strong{color:var(--yellow)}
+
+.empty{text-align:center;padding:26px 14px;color:var(--muted);font-size:.85rem}
+.empty .e-icon{font-size:32px;margin-bottom:6px;opacity:.4}
+
+.info-box{background:rgba(250,204,21,.06);border-left:3px solid var(--yellow);border-radius:0 8px 8px 0;padding:10px 12px;font-size:.78rem;color:var(--muted);line-height:1.5;margin-top:12px}
+.info-box.success{background:rgba(16,185,129,.08);border-color:var(--success)}
+.info-box.error{background:rgba(239,68,68,.08);border-color:var(--danger)}
+.info-box strong{color:var(--text)}
+
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.75);display:none;align-items:center;justify-content:center;padding:16px;z-index:1000}
+.modal-overlay.show{display:flex}
+.modal-box{background:var(--panel);border:1px solid var(--border);border-radius:16px;padding:20px;max-width:420px;width:100%;max-height:85vh;overflow-y:auto}
+.modal-box h3{font-size:1rem;font-weight:800;margin-bottom:4px;color:var(--yellow)}
+.modal-box .m-sub{font-size:.75rem;color:var(--muted);margin-bottom:14px;line-height:1.4}
+.modal-box .m-item{background:#0a0a10;border-left:3px solid var(--success);border-radius:0 8px 8px 0;padding:10px 12px;margin-bottom:8px;font-size:.8rem}
+.modal-box .m-item strong{color:var(--text)}
+.modal-box .m-item .m-meta{color:var(--muted);font-size:.72rem;margin-top:3px;line-height:1.5}
+.modal-box .m-close{width:100%;margin-top:10px;padding:10px;border-radius:8px;border:1px solid var(--border);background:transparent;color:var(--text);font-weight:700;font-size:.85rem;cursor:pointer;font-family:inherit}
+.modal-box .m-close:hover{background:#0a0a10}
+
+.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%) translateY(80px);background:var(--panel);border:1px solid var(--border);color:var(--text);padding:10px 18px;border-radius:8px;font-size:.82rem;font-weight:600;opacity:0;transition:.25s;pointer-events:none;z-index:1100;max-width:90vw}
+.toast.show{transform:translateX(-50%) translateY(0);opacity:1}
+.toast.error{border-color:var(--danger)}
+.toast.success{border-color:var(--success)}
+
+@media(max-width:380px){
+  .prod-header,.prod-row{grid-template-columns:75px 1fr 60px 28px}
+  .stock-grid{grid-template-columns:1fr}
+  .tipos-grid{grid-template-columns:1fr}
+  .row-2{grid-template-columns:1fr}
+}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div>
+    <h1>Panel <span>Vendedores</span></h1>
+    <div class="sub" id="userSub">Cargando…</div>
+  </div>
+  <button class="btn-logout" onclick="logout()">Salir</button>
+</div>
+
+<main class="main">
+  <div id="menuView">
+    <div class="menu-title">¿Qué necesitas hacer?</div>
+    <div class="menu-grid">
+      <button class="menu-card" onclick="openPanel('subir-docs')">
+        <span class="icon">📄</span>
+        <div class="text">
+          <div class="name">Subir Documentos</div>
+          <div class="desc">Boleta · Factura · Ticket · Transferencia</div>
+        </div>
+      </button>
+      <button class="menu-card" onclick="openPanel('inventario')">
+        <span class="icon">🔍</span>
+        <div class="text">
+          <div class="name">Consultar Inventario</div>
+          <div class="desc">Ver stock del sistema y stock verificado</div>
+        </div>
+      </button>
+    </div>
+  </div>
+
+  <div id="panel-subir-docs" class="panel">
+    <button class="back-btn" onclick="closePanel()">← Volver</button>
+    <div class="card">
+      <h2><span class="icon">📄</span> ¿Qué documento vas a subir?</h2>
+      <p class="help">Elige el tipo de documento para cargar los campos correctos.</p>
+      <div class="tipos-grid">
+        <button class="tipo-doc" onclick="abrirFormDoc('boleta')">
+          <span class="td-icon">🧾</span>
+          <span class="td-name">Boleta</span>
+          <span class="td-desc">Con N° de boleta</span>
+        </button>
+        <button class="tipo-doc" onclick="abrirFormDoc('factura')">
+          <span class="td-icon">📄</span>
+          <span class="td-name">Factura</span>
+          <span class="td-desc">Con N° de factura</span>
+        </button>
+        <button class="tipo-doc" onclick="abrirFormDoc('ticket')">
+          <span class="td-icon">🎫</span>
+          <span class="td-name">Ticket</span>
+          <span class="td-desc">Con OUT / SO</span>
+        </button>
+        <button class="tipo-doc" onclick="abrirFormDoc('transferencia')">
+          <span class="td-icon">🔄</span>
+          <span class="td-name">Transferencia</span>
+          <span class="td-desc">Movimiento interno</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div id="panel-docForm" class="panel">
+    <button class="back-btn" onclick="openPanel('subir-docs')">← Volver</button>
+    <div class="card" id="docFormCard"></div>
+  </div>
+
+  <div id="panel-inventario" class="panel">
+    <button class="back-btn" onclick="closePanel()">← Volver</button>
+    <div class="card">
+      <h2><span class="icon">🔍</span> Consultar Inventario</h2>
+      <div class="search-wrap">
+        <span class="s-icon">🔍</span>
+        <input type="text" id="inpBusq" placeholder="Código o descripción…" oninput="buscarProducto()">
+      </div>
+      <div id="resBusqueda">
+        <div class="empty"><div class="e-icon">🔍</div><div>Escribe para buscar</div></div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<div class="modal-overlay" id="modalVerif" onclick="if(event.target===this)cerrarModal()">
+  <div class="modal-box" id="modalBox"></div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+if(window.pdfjsLib) pdfjsLib.GlobalWorkerOptions.workerSrc =
+  'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+
+const Store = {
+  get(k){ try{ return localStorage.getItem(k)||sessionStorage.getItem(k); }catch{ return null; } },
+  set(k,v,perm=true){ try{ perm?localStorage.setItem(k,v):sessionStorage.setItem(k,v); }catch{} },
+  remove(k){ try{ localStorage.removeItem(k); sessionStorage.removeItem(k); }catch{} }
+};
+
+const SESSION_KEY = 'vca_session';
+let SESION = null;
+
+function cargarSesion(){
+  const raw = Store.get(SESSION_KEY);
+  if(!raw) return false;
+  try{
+    const s = JSON.parse(raw);
+    if(!s || !s.user) return false;
+    SESION = s;
+    return true;
+  }catch{ return false; }
+}
+function logout(){ Store.remove(SESSION_KEY); window.location.href = 'index.html'; }
+
+function toast(msg, tipo='info'){
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'toast show ' + (tipo==='error'?'error':tipo==='success'?'success':'');
+  clearTimeout(t._t);
+  t._t = setTimeout(()=>t.classList.remove('show'), 3000);
+}
+
+function openPanel(id){
+  document.getElementById('menuView').style.display = 'none';
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  const p = document.getElementById('panel-' + id);
+  if(p) p.classList.add('active');
+  window.scrollTo(0,0);
+}
+function closePanel(){
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.getElementById('menuView').style.display = 'block';
+  window.scrollTo(0,0);
+}
+
+let DOC = { tipo:null, archivo:null, pdfBase64:'', texto:'', nombreArchivo:'', tipoEntrega:'', meta:{} };
+
+function abrirFormDoc(tipo){
+  DOC = { tipo, archivo:null, pdfBase64:'', texto:'', nombreArchivo:'', tipoEntrega:'', meta:{} };
+
+  const card = document.getElementById('docFormCard');
+  const titulos = {
+    boleta:'🧾 Subir Boleta',
+    factura:'📄 Subir Factura',
+    ticket:'🎫 Subir Ticket',
+    transferencia:'🔄 Transferencia Interna'
+  };
+  const descs = {
+    boleta:'Ingresa el N° de boleta antes de subir el PDF.',
+    factura:'Ingresa el N° de factura antes de subir el PDF.',
+    ticket:'Los números OUT y SO se detectan del PDF automáticamente.',
+    transferencia:'Movimiento interno entre bodegas. Se registra conductor.'
+  };
+
+  let campos = '';
+
+  if(tipo === 'boleta'){
+    campos = `<div class="field">
+      <label>N° Boleta *</label>
+      <input type="text" id="fNumBoleta" placeholder="Ej: 001234" autocomplete="off">
+    </div>`;
+  } else if(tipo === 'factura'){
+    campos = `<div class="field">
+      <label>N° Factura *</label>
+      <input type="text" id="fNumFactura" placeholder="Ej: F-001234" autocomplete="off">
+    </div>`;
+  } else if(tipo === 'ticket'){
+    campos = `<div class="row-2">
+      <div class="field">
+        <label>N° OUT</label>
+        <input type="text" id="fNumOut" placeholder="Se detecta del PDF" autocomplete="off">
+      </div>
+      <div class="field">
+        <label>N° SO</label>
+        <input type="text" id="fNumSO" placeholder="Se detecta del PDF" autocomplete="off">
+      </div>
+    </div>`;
+  } else if(tipo === 'transferencia'){
+    campos = `<div class="row-2">
+      <div class="field">
+        <label>Origen *</label>
+        <select id="fOrigen" onchange="autoDestino()">
+          <option value="">Selecciona...</option>
+          <option value="Borla">Borla</option>
+          <option value="Río de Janeiro">Río de Janeiro</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Destino *</label>
+        <select id="fDestino" onchange="autoOrigen()">
+          <option value="">Selecciona...</option>
+          <option value="Borla">Borla</option>
+          <option value="Río de Janeiro">Río de Janeiro</option>
+        </select>
+      </div>
+    </div>
+    <div class="field">
+      <label>Conductor *</label>
+      <input type="text" id="fConductor" placeholder="Nombre del conductor" autocomplete="off">
+    </div>`;
+  }
+
+  const iconPart = titulos[tipo].split(' ')[0];
+  const titlePart = titulos[tipo].split(' ').slice(1).join(' ');
+
+  card.innerHTML = `
+    <h2><span class="icon">${iconPart}</span> ${titlePart}</h2>
+    <p class="help">${descs[tipo]}</p>
+    ${campos}
+    <div class="drop" onclick="document.getElementById('fileDoc').click()">
+      <input type="file" id="fileDoc" accept=".pdf" onchange="onFile(event)">
+      <div class="d-icon">📄</div>
+      <div class="d-title">Toca para subir PDF</div>
+      <div class="d-hint">Se guardará el documento con la tarea</div>
+    </div>
+    <div class="actions-btns" id="actionsBtns">
+      <button class="act-btn inmediata" onclick="elegirTipo('inmediata')">
+        <div class="a-icon">⚡</div>
+        <div class="a-title">Entrega Inmediata</div>
+        <div class="a-desc">Prioridad alta</div>
+      </button>
+      <button class="act-btn posterior" onclick="elegirTipo('posterior')">
+        <div class="a-icon">📅</div>
+        <div class="a-title">Entrega Posterior</div>
+        <div class="a-desc">Prioridad normal</div>
+      </button>
+    </div>
+    <div id="resultado"></div>
+  `;
+
+  openPanel('docForm');
+}
+
+function autoDestino(){
+  const o = document.getElementById('fOrigen').value;
+  const d = document.getElementById('fDestino');
+  if(o === 'Borla') d.value = 'Río de Janeiro';
+  else if(o === 'Río de Janeiro') d.value = 'Borla';
+}
+
+function autoOrigen(){
+  const d = document.getElementById('fDestino').value;
+  const o = document.getElementById('fOrigen');
+  if(d === 'Borla') o.value = 'Río de Janeiro';
+  else if(d === 'Río de Janeiro') o.value = 'Borla';
+}
+
+async function onFile(event){
+  const file = event.target.files[0];
+  if(!file) return;
+  event.target.value = '';
+
+  DOC.archivo = file;
+  DOC.nombreArchivo = file.name;
+
+  document.getElementById('resultado').innerHTML = '<div class="info-box">⏳ Leyendo PDF…</div>';
+  document.getElementById('actionsBtns').classList.remove('show');
+
+  try{
+    const ab = await file.arrayBuffer();
+    const pdf = await pdfjsLib.getDocument({ data: ab }).promise;
+    let texto = '';
+
+    for(let i = 1; i <= pdf.numPages; i++){
+      const page = await pdf.getPage(i);
+      const content = await page.getTextContent();
+      let linea = '';
+      let yAnt = null;
+      content.items.forEach(it => {
+        if(yAnt !== null && Math.abs(it.transform[5] - yAnt) > 5){
+          texto += linea + '\n'; linea = '';
+        }
+        linea += it.str + ' ';
+        yAnt = it.transform[5];
+      });
+      if(linea) texto += linea + '\n';
+    }
+
+    DOC.texto = texto.trim();
+    DOC.pdfBase64 = await fileToBase64(file);
+
+    const autoOut = detectarOut(DOC.texto);
+    const autoSO = detectarSO(DOC.texto);
+
+    if(DOC.tipo === 'ticket'){
+      const inpOut = document.getElementById('fNumOut');
+      const inpSO = document.getElementById('fNumSO');
+      if(inpOut && !inpOut.value && autoOut) inpOut.value = autoOut;
+      if(inpSO && !inpSO.value && autoSO) inpSO.value = autoSO;
+    }
+
+    document.getElementById('resultado').innerHTML =
+      '<div class="info-box success">✅ PDF leído. Elige el tipo de entrega.</div>';
+    document.getElementById('actionsBtns').classList.add('show');
+    toast('PDF cargado','success');
+
+  }catch(e){
+    document.getElementById('resultado').innerHTML =
+      `<div class="info-box error">❌ Error: ${escapeHtml(e.message)}</div>`;
+    toast('Error leyendo PDF','error');
+  }
+}
+
+function fileToBase64(file){
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
+function detectarOut(texto){
+  const m = texto.match(/(?:WH\d+\/)?OUT[\/\s]+(\d+)/i);
+  return m ? m[1].trim() : '';
+}
+function detectarSO(texto){
+  const m = texto.match(/\bSO\s*(\d+)/i);
+  return m ? m[1].trim() : '';
+}
+
+function extraerDatosCliente(texto){
+  const datos = { empresa:'', rut:'' };
+  const mc = texto.match(/Customer\s*Address[:\s]+([\s\S]*?)\s*RUT[:\s]+CL\s*([0-9K]+)/i);
+  if(mc){
+    let nombre = mc[1].trim();
+    nombre = nombre.replace(/[\+\s]*\d[\d\s\+\-\.]{6,}\s*$/,'').trim();
+    nombre = nombre.replace(/[.,;:]+\s*$/,'').trim();
+    datos.empresa = nombre;
+    datos.rut = mc[2].trim();
+  }
+  return datos;
+}
+
+function extraerProductos(texto){
+  const productos = [];
+
+  const HEADERS = /^(product|producto|quantity|qty|cantidad|from|desde|barcode|codigo|código|code|sku|total|subtotal|order|orden|state|estado|date|fecha|weight|peso|precio|price|unit|units|unidad|unidades|name|nombre|stock|neto|iva|description|descripcion|descripción)$/i;
+
+  const txt = texto
+    .replace(/<br\s*\/?>/gi, ' ')
+    .replace(/<\/?[a-z][^>]*>/gi, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+
+  const regex = /\[([A-Z0-9]{2,})\]([\s\S]*?)(?=\[[A-Z0-9]{2,}\]|$)/gi;
+  let m;
+
+  while((m = regex.exec(txt)) !== null){
+    const codigo = m[1].trim().toUpperCase();
+    if(HEADERS.test(codigo)) continue;
+    let bloque = m[2].trim();
+    if(!bloque || bloque.length < 3) continue;
+
+    const idxCust = bloque.search(/\bcustomer\b/i);
+    if(idxCust !== -1){
+      bloque = bloque.substring(0, idxCust).trim();
+      if(!bloque || bloque.length < 3) continue;
+    }
+
+    let ubicacion = '';
+    const ubiM = bloque.match(/(Juvenal\s+Morla\s*\d+\s*\/\s*Stock|Sucursal\s+Rio\s+de\s+Janeiro\s*\/\s*Stock|Sucursal\s+Rio\s*\/\s*Stock)/i);
+    if(ubiM){
+      ubicacion = ubiM[0].replace(/\s+/g,' ').trim();
+      bloque = bloque.replace(ubiM[0], '').trim();
+    }
+
+    const qtyM = bloque.match(/(\d+(?:[.,]\d+)?)\s*(Unidad(?:es)?|TIRA(?:\s*\d+\s*M)?|TUBERIA(?:\s*\d+\s*M)?|PZ|CAJ|BOL|KG|LT|M)\s*$/i);
+
+    let qty = 0, desc = '';
+    if(qtyM){
+      qty = parseFloat(qtyM[1].replace(',', '.'));
+      desc = bloque.substring(0, qtyM.index).trim();
+    } else {
+      const numM = bloque.match(/(\d+(?:[.,]\d+)?)\s*$/);
+      if(numM){
+        qty = parseFloat(numM[1].replace(',', '.'));
+        desc = bloque.substring(0, numM.index).trim();
+      } else {
+        desc = bloque.trim();
+      }
+    }
+
+    desc = desc.replace(/[\s.,;]+$/, '').trim();
+
+    if(codigo && desc.length >= 3){
+      productos.push({ codigo, desc, qty: qty || 0, ubicacion });
+    }
+  }
+
+  const hayCero = productos.some(p => p.qty === 0);
+  if(hayCero){
+    const qfM = texto.match(/Quantity\s*From([\s\S]+?)(?:\n\n|\Z)/i);
+    if(qfM){
+      const qfText = qfM[1]
+        .replace(/<br\s*\/?>/gi, ' ')
+        .replace(/<\/?[a-z][^>]*>/gi, ' ')
+        .replace(/\s+/g, ' ').trim();
+
+      const qfRegex = /(\d+(?:[.,]\d+)?)\s*(Unidad(?:es)?|TIRA(?:\s*\d+\s*M)?|TUBERIA(?:\s*\d+\s*M)?|PZ|CAJ|BOL|KG|LT|M)?\s*(Sucursal\s+Rio(?:\s+de\s+Janeiro)?|Juvenal\s+Morla\s*\d+)?\s*(?:\/\s*Stock)?/gi;
+
+      const capturas = [];
+      let qm;
+      while((qm = qfRegex.exec(qfText)) !== null){
+        if(qm[1]){
+          capturas.push({
+            qty: parseFloat(qm[1].replace(',', '.')),
+            ubicacion: qm[3] ? qm[3].replace(/\s+/g,' ').trim() + '/Stock' : ''
+          });
+        }
+      }
+
+      let idx = 0;
+      for(const p of productos){
+        if(p.qty === 0 && capturas[idx]){
+          p.qty = capturas[idx].qty;
+          if(!p.ubicacion) p.ubicacion = capturas[idx].ubicacion;
+          idx++;
+        }
+      }
+    }
+  }
+
+  return productos;
+}
+
+function elegirTipo(tipoEntrega){
+  if(!DOC.texto) return toast('Primero sube un PDF','error');
+  DOC.tipoEntrega = tipoEntrega;
+
+  const datos = extraerDatosCliente(DOC.texto);
+  const productos = extraerProductos(DOC.texto);
+  mostrarPreview(datos, productos);
+}
+
+function mostrarPreview(datos, productos){
+  const cont = document.getElementById('resultado');
+
+  const tipoLbl = DOC.tipoEntrega === 'inmediata' ? '⚡ Inmediata' : '📅 Posterior';
+  const colorTipo = DOC.tipoEntrega === 'inmediata' ? 'var(--orange)' : 'var(--muted)';
+  const tipoDocLbl = { boleta:'Boleta', factura:'Factura', ticket:'Ticket', transferencia:'Transferencia' }[DOC.tipo];
+
+  let html = `<div class="info-box" style="border-color:${colorTipo}">
+    <strong>Tipo:</strong> ${tipoDocLbl} · ${tipoLbl}<br>
+    <strong>Archivo:</strong> ${escapeHtml(DOC.nombreArchivo)}
+  </div>`;
+
+  if(DOC.tipo === 'transferencia'){
+    const origen = document.getElementById('fOrigen').value;
+    const destino = document.getElementById('fDestino').value;
+    const conductor = document.getElementById('fConductor').value;
+    html += `<div class="info-box">
+      <strong>Origen:</strong> ${escapeHtml(origen || '—')} → <strong>Destino:</strong> ${escapeHtml(destino || '—')}<br>
+      <strong>Conductor:</strong> ${escapeHtml(conductor || '—')}
+    </div>`;
+  } else {
+    html += `
+      <div class="field" style="margin-top:12px"><label>Empresa / Cliente</label>
+        <input type="text" id="inpEmpresa" value="${escapeAttr(datos.empresa)}" placeholder="Nombre cliente">
+      </div>
+      <div class="field"><label>RUT</label>
+        <input type="text" id="inpRut" value="${escapeAttr(datos.rut)}" placeholder="Ej: 76425936K">
+      </div>
+    `;
+
+    if(DOC.tipo === 'ticket'){
+      const inpOut = document.getElementById('fNumOut');
+      const inpSO = document.getElementById('fNumSO');
+      html += `<div class="row-2">
+        <div class="field"><label>N° OUT</label>
+          <input type="text" id="inpOut" value="${escapeAttr(inpOut ? inpOut.value : '')}">
+        </div>
+        <div class="field"><label>N° SO</label>
+          <input type="text" id="inpSO" value="${escapeAttr(inpSO ? inpSO.value : '')}">
+        </div>
+      </div>`;
+    }
+  }
+
+  html += `<h3 style="font-size:.78rem;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin:16px 0 8px">
+    Productos (${productos.length})</h3>`;
+  html += `<div class="prod-header">
+    <div>Código</div><div>Descripción</div>
+    <div style="text-align:right">Cant.</div><div></div>
+  </div>`;
+  html += `<div id="prodList">`;
+  productos.forEach((p, i) => {
+    html += `<div class="prod-row" data-i="${i}">
+      <input type="text" value="${escapeAttr(p.codigo)}" onchange="updProd(${i},'codigo',this.value)">
+      <input type="text" value="${escapeAttr(p.desc)}" onchange="updProd(${i},'desc',this.value)">
+      <input type="number" class="qty" value="${p.qty}" onchange="updProd(${i},'qty',this.value)">
+      <button class="del" onclick="delProd(${i})">✕</button>
+    </div>`;
+  });
+  html += `</div>`;
+  html += `<button class="add-prod" onclick="addProd()">+ Agregar producto manual</button>`;
+
+  html += `<div class="btn-row">
+    <button class="btn btn-ghost" onclick="cancelarExtraccion()">Cancelar</button>
+    <button class="btn btn-success" onclick="guardarTarea()">💾 Guardar tarea</button>
+  </div>`;
+
+  cont.innerHTML = html;
+  window._productos = productos;
+}
+
+function updProd(i, campo, valor){
+  if(!window._productos || !window._productos[i]) return;
+  if(campo === 'qty') valor = parseFloat(valor) || 0;
+  window._productos[i][campo] = valor;
+}
+function delProd(i){
+  if(!window._productos) return;
+  window._productos.splice(i, 1);
+  const datos = extraerDatosCliente(DOC.texto);
+  mostrarPreview(datos, window._productos);
+}
+function addProd(){
+  if(!window._productos) window._productos = [];
+  window._productos.push({ codigo:'', desc:'', qty:1, ubicacion:'' });
+  const datos = extraerDatosCliente(DOC.texto);
+  mostrarPreview(datos, window._productos);
+}
+function cancelarExtraccion(){
+  DOC = { tipo:DOC.tipo, archivo:null, pdfBase64:'', texto:'', nombreArchivo:'', tipoEntrega:'', meta:{} };
+  window._productos = [];
+  document.getElementById('actionsBtns').classList.remove('show');
+  document.getElementById('resultado').innerHTML = '';
+  const fileInp = document.getElementById('fileDoc');
+  if(fileInp) fileInp.value = '';
+}
+
+function guardarTarea(){
+  if(!window._productos) return;
+
+  const meta = {};
+
+  if(DOC.tipo === 'boleta'){
+    meta.numBoleta = (document.getElementById('fNumBoleta')?.value || '').trim();
+    if(!meta.numBoleta) return toast('Ingresa el N° de boleta', 'error');
+  } else if(DOC.tipo === 'factura'){
+    meta.numFactura = (document.getElementById('fNumFactura')?.value || '').trim();
+    if(!meta.numFactura) return toast('Ingresa el N° de factura', 'error');
+  } else if(DOC.tipo === 'ticket'){
+    meta.numOut = (document.getElementById('inpOut')?.value || document.getElementById('fNumOut')?.value || '').trim();
+    meta.numSO = (document.getElementById('inpSO')?.value || document.getElementById('fNumSO')?.value || '').trim();
+  } else if(DOC.tipo === 'transferencia'){
+    meta.origen = document.getElementById('fOrigen').value;
+    meta.destino = document.getElementById('fDestino').value;
+    meta.conductor = (document.getElementById('fConductor')?.value || '').trim();
+    if(!meta.origen || !meta.destino) return toast('Elige origen y destino', 'error');
+    if(!meta.conductor) return toast('Ingresa el conductor', 'error');
+  }
+
+  if(DOC.tipo !== 'transferencia'){
+    meta.empresa = (document.getElementById('inpEmpresa')?.value || '').trim();
+    meta.rut = (document.getElementById('inpRut')?.value || '').trim();
+  }
+
+  const validos = window._productos.filter(p => p.codigo && p.desc && p.qty > 0);
+  if(validos.length === 0) return toast('Necesitas al menos 1 producto completo', 'error');
+
+  const prefijos = { boleta:'BOL', factura:'FAC', ticket:'TIC', transferencia:'TRA' };
+  const prefijo = prefijos[DOC.tipo] + '-' + (DOC.tipoEntrega === 'inmediata' ? 'IN' : 'PO');
+
+  const tareas = getTareas();
+  const delMismo = tareas.filter(t => t.id && t.id.startsWith(prefijo)).length;
+  const id = `${prefijo}-${String(delMismo + 1).padStart(3,'0')}`;
+
+  const tarea = {
+    id,
+    tipo: DOC.tipo,
+    tipoEntrega: DOC.tipoEntrega,
+    numBoleta: meta.numBoleta || null,
+    numFactura: meta.numFactura || null,
+    numOut: meta.numOut || null,
+    numSO: meta.numSO || null,
+    origen: meta.origen || null,
+    destino: meta.destino || null,
+    conductor: meta.conductor || null,
+    empresa: meta.empresa || '',
+    rut: meta.rut || '',
+    items: validos.map(p => ({
+      codigo: p.codigo.trim(),
+      desc: p.desc.trim(),
+      qty: p.qty,
+      estado: 'pendiente',
+      ubicacionAsignada: null
+    })),
+    archivo: DOC.nombreArchivo,
+    pdfBase64: DOC.pdfBase64,
+    usuario: SESION.user,
+    fecha: new Date().toISOString(),
+    estado: 'pendiente',
+    firmada: false
+  };
+
+  tareas.push(tarea);
+
+  try{
+    Store.set('vca_tareas', JSON.stringify(tareas));
+  }catch(e){
+    return toast('Almacenamiento lleno. Elimina tareas antiguas.', 'error');
+  }
+
+  toast(`✅ Tarea ${id} guardada (con PDF)`, 'success');
+
+  DOC = { tipo:null, archivo:null, pdfBase64:'', texto:'', nombreArchivo:'', tipoEntrega:'', meta:{} };
+  window._productos = [];
+  closePanel();
+}
+
+function getTareas(){
+  try{ return JSON.parse(Store.get('vca_tareas') || '[]'); }
+  catch{ return []; }
+}
+
+function buscarProducto(){
+  const q = document.getElementById('inpBusq').value.trim().toLowerCase();
+  const cont = document.getElementById('resBusqueda');
+
+  if(q.length < 2){
+    cont.innerHTML = '<div class="empty"><div class="e-icon">🔍</div><div>Escribe al menos 2 caracteres</div></div>';
+    return;
+  }
+
+  let inv = [];
+  try{ inv = JSON.parse(Store.get('vca_inventario') || '[]'); }catch{}
+
+  const encontrados = inv.filter(p =>
+    p.codigo.toLowerCase().includes(q) || p.desc.toLowerCase().includes(q)
+  ).slice(0, 15);
+
+  if(encontrados.length === 0){
+    cont.innerHTML = '<div class="empty"><div class="e-icon">📭</div><div>Sin resultados</div></div>';
+    return;
+  }
+
+  cont.innerHTML = encontrados.map(p => renderTarjetaProducto(p)).join('');
+}
+
+function renderTarjetaProducto(p){
+  const esTubo6m = /\b(?:6\s*M(?:TS?)?|6\s*METROS?|TIRA\s+6|TUBERIA\s+6|TUBO\s+6)\b/i.test(p.desc);
+  const conteos = getConteosVerificados(p.codigo);
+  const stockVerif = conteos.reduce((s, c) => s + (c.cantidad || 0), 0);
+  const tieneVerif = conteos.length > 0;
+
+  const metros = esTubo6m
+    ? `<div class="stock-metros">
+        📏 Equivale a <strong>${p.stock * 6} metros</strong> en sistema · <strong>${stockVerif * 6} metros</strong> verificados
+        (1 tubo = 6 m)
+      </div>`
+    : '';
+
+  return `<div class="result-card">
+    <div class="rc-code">${escapeHtml(p.codigo)}</div>
+    <div class="rc-desc">${escapeHtml(p.desc)}</div>
+    <div class="stock-grid">
+      <div class="stock-box sistema">
+        <div class="sb-num">${p.stock}</div>
+        <div class="sb-lbl">Stock Sistema</div>
+      </div>
+      <div class="stock-box verificado ${tieneVerif ? '' : 'vacio'}"
+           ${tieneVerif ? `onclick="verDetalleVerif('${escapeAttr(p.codigo)}')"` : ''}>
+        <div class="sb-num">
+          ${stockVerif}
+          <span class="sb-check ${tieneVerif ? '' : 'empty'}">${tieneVerif ? '✓' : '—'}</span>
+        </div>
+        <div class="sb-lbl">${tieneVerif ? 'Stock Verificado' : 'Sin verificar'}</div>
+      </div>
+      ${metros}
+    </div>
+  </div>`;
+}
+
+function getConteosVerificados(codigo){
+  try{
+    const conteos = JSON.parse(Store.get('vca_conteos') || '[]');
+    return conteos.filter(c => c.codigo === codigo);
+  }catch{ return []; }
+}
+
+function verDetalleVerif(codigo){
+  const conteos = getConteosVerificados(codigo);
+  if(conteos.length === 0) return;
+
+  let inv = [];
+  try{ inv = JSON.parse(Store.get('vca_inventario') || '[]'); }catch{}
+  const prod = inv.find(p => p.codigo === codigo);
+
+  let html = `<h3>✓ Verificación de Stock</h3>
+    <p class="m-sub">${escapeHtml(codigo)} · ${prod ? escapeHtml(prod.desc) : ''}</p>`;
+
+  conteos.forEach(c => {
+    const fecha = c.fecha ? new Date(c.fecha).toLocaleString('es-CL', {
+      day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit'
+    }) : '—';
+    html += `<div class="m-item">
+      <strong>${c.cantidad} unidades</strong>
+      <div class="m-meta">
+        📍 ${escapeHtml(c.ubicacion || 'Sin ubicación')}<br>
+        👤 ${escapeHtml(c.usuario || '—')}<br>
+        📅 ${fecha}
+      </div>
+    </div>`;
+  });
+
+  html += `<button class="m-close" onclick="cerrarModal()">Cerrar</button>`;
+  document.getElementById('modalBox').innerHTML = html;
+  document.getElementById('modalVerif').classList.add('show');
+}
+
+function cerrarModal(){
+  document.getElementById('modalVerif').classList.remove('show');
+}
+
+function escapeHtml(s){
+  return String(s ?? '').replace(/[&<>"']/g, c => ({
+    '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
+  }[c]));
+}
+function escapeAttr(s){ return escapeHtml(s); }
+
+window.addEventListener('DOMContentLoaded', () => {
+  if(!cargarSesion()){
+    document.body.innerHTML =
+      '<div style="padding:40px;text-align:center;font-family:system-ui">' +
+      '<h2 style="margin-bottom:12px">Sin sesión activa</h2>' +
+      '<a href="index.html" style="color:#facc15">← Ir al login</a>' +
+      '</div>';
+    return;
+  }
+  document.getElementById('userSub').textContent =
+    SESION.nombre + ' · ' + (SESION.rol === 'admin' ? 'Admin' : SESION.rol);
+});
+</script>
+</body>
+</html>

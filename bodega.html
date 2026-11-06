@@ -6,6 +6,8 @@
 <meta name="theme-color" content="#0a0a10">
 <title>Panel Bodega · Sistema Bodega</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <style>
 :root{
   --yellow:#facc15;--yellow-d:#fbbf24;--orange:#f97316;
@@ -26,7 +28,6 @@ body{
 .header h1 span{color:var(--yellow)}
 .header .sub{font-size:.68rem;color:var(--muted);margin-top:1px}
 .btn-logout{padding:6px 12px;border-radius:8px;border:1px solid rgba(239,68,68,.3);background:rgba(239,68,68,.08);color:#f87171;font-size:.75rem;font-weight:700;cursor:pointer;font-family:inherit}
-.btn-logout:hover{background:rgba(239,68,68,.15)}
 
 .main{max-width:780px;margin:0 auto;padding:20px 16px}
 .menu-title{font-size:.7rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:12px;padding-left:4px}
@@ -36,6 +37,7 @@ body{
 .menu-card .icon{font-size:28px}
 .menu-card .name{font-size:.88rem;font-weight:800}
 .menu-card .desc{font-size:.66rem;color:var(--muted);line-height:1.35}
+.menu-card.full{grid-column:1/-1}
 
 .panel{display:none}
 .panel.active{display:block}
@@ -46,7 +48,6 @@ body{
 .card .help{font-size:.75rem;color:var(--muted);margin-bottom:14px;line-height:1.5}
 
 .back-btn{background:transparent;border:none;color:var(--muted);font-size:.8rem;font-weight:600;cursor:pointer;padding:4px 0;margin-bottom:10px;font-family:inherit}
-.back-btn:hover{color:var(--yellow)}
 
 .stats-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px}
 .stat{background:#0a0a10;border:1px solid var(--border);border-radius:10px;padding:12px;text-align:center}
@@ -55,7 +56,7 @@ body{
 
 .field{margin-bottom:12px}
 .field label{display:block;font-size:.7rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px}
-.field input,.field select,.field textarea{width:100%;padding:10px 12px;background:#0a0a10;border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:.88rem;font-family:inherit;outline:none;transition:.2s}
+.field input,.field select,.field textarea{width:100%;padding:10px 12px;background:#0a0a10;border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:.88rem;font-family:inherit;outline:none}
 .field input:focus,.field select:focus,.field textarea:focus{border-color:var(--yellow)}
 .row-2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 .row-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
@@ -69,19 +70,15 @@ body{
 
 .btn{padding:11px 16px;border-radius:9px;border:none;font-weight:700;font-size:.85rem;cursor:pointer;font-family:inherit;transition:.2s;display:inline-flex;align-items:center;justify-content:center;gap:6px}
 .btn-primary{background:var(--yellow);color:#0a0a10;width:100%}
-.btn-primary:hover:not(:disabled){background:var(--yellow-d)}
-.btn-primary:disabled{opacity:.4;cursor:not-allowed}
 .btn-success{background:var(--success);color:white}
-.btn-success:hover:not(:disabled){background:#059669}
 .btn-ghost{background:transparent;color:var(--text);border:1px solid var(--border)}
-.btn-ghost:hover{background:#0a0a10}
 .btn-purple{background:var(--purple);color:white}
-.btn-purple:hover:not(:disabled){background:#9333ea}
 .btn-blue{background:var(--blue);color:white}
-.btn-blue:hover:not(:disabled){background:#2563eb}
+.btn-danger{background:rgba(239,68,68,.15);color:#f87171;border:1px solid rgba(239,68,68,.3)}
 .btn-sm{padding:6px 10px;font-size:.75rem;border-radius:7px}
 .btn-row{display:flex;gap:8px;margin-top:12px}
 .btn-row .btn{flex:1}
+.btn:disabled{opacity:.4;cursor:not-allowed}
 
 .search-wrap{position:relative;margin-bottom:12px}
 .search-wrap input{width:100%;padding:11px 12px 11px 38px;background:#0a0a10;border:1px solid var(--border);border-radius:10px;color:var(--text);font-size:.88rem;font-family:inherit;outline:none}
@@ -118,7 +115,6 @@ body{
 .info-box.blue{background:rgba(59,130,246,.08);border-color:var(--blue)}
 .info-box strong{color:var(--text)}
 
-/* Tarea card */
 .tarea-card{background:#0a0a10;border:1px solid rgba(250,204,21,.15);border-radius:12px;padding:13px;margin-bottom:9px;transition:.2s}
 .tarea-card:hover{border-color:var(--yellow)}
 .tarea-card.prio-1{border-left:4px solid var(--orange)}
@@ -135,68 +131,54 @@ body{
 .tarea-card .tc-meta{font-size:.72rem;color:var(--muted);line-height:1.5}
 .tarea-card .tc-actions{display:flex;gap:6px;margin-top:10px;flex-wrap:wrap}
 
-/* Ruta/items */
 .ruta-step{background:#0a0a10;border-left:3px solid var(--orange);border-radius:0 8px 8px 0;padding:11px 12px;margin-bottom:6px;display:flex;align-items:center;gap:10px}
 .ruta-step.completado{border-color:var(--success);opacity:.75}
 .ruta-step.falta{border-color:var(--danger)}
 .ruta-step .rs-num{width:24px;height:24px;border-radius:50%;background:var(--orange);color:white;display:flex;align-items:center;justify-content:center;font-size:.75rem;font-weight:900;flex-shrink:0}
 .ruta-step.completado .rs-num{background:var(--success)}
-.ruta-step.falta .rs-num{background:var(--danger)}
 .ruta-step .rs-info{flex:1;min-width:0}
 .ruta-step .rs-ubi{font-size:.85rem;font-weight:800;color:var(--yellow)}
-.ruta-step.completado .rs-ubi{color:var(--success)}
-.ruta-step.falta .rs-ubi{color:var(--danger)}
 .ruta-step .rs-prod{font-size:.72rem;color:var(--muted);margin-top:1px}
 .ruta-step .rs-qty{font-size:.95rem;font-weight:900;flex-shrink:0}
 
-/* SCAN BOX */
 .scan-box{background:#0a0a10;border:2px solid var(--yellow);border-radius:12px;padding:20px;text-align:center;margin-bottom:14px}
 .scan-box .sb-title{font-size:.72rem;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px}
 .scan-box input{width:100%;padding:14px;background:transparent;border:none;color:var(--yellow);font-size:1.3rem;font-family:'SF Mono','Consolas',monospace;text-align:center;outline:none;font-weight:800;letter-spacing:.1em}
 .scan-box input::placeholder{color:#475569;font-weight:500;letter-spacing:0;font-size:.9rem}
 
-/* Tipo contenedor */
 .tipo-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px}
 .tipo-btn{padding:14px 10px;border-radius:10px;border:2px solid var(--border);background:transparent;color:var(--text);cursor:pointer;font-family:inherit;font-size:.8rem;font-weight:700;display:flex;flex-direction:column;align-items:center;gap:4px;transition:.15s}
-.tipo-btn:hover{border-color:var(--yellow);background:rgba(250,204,21,.06)}
+.tipo-btn:hover{border-color:var(--yellow)}
 .tipo-btn.sel{border-color:var(--yellow);background:rgba(250,204,21,.14);color:var(--yellow)}
 .tipo-btn .ti-icon{font-size:22px}
 .tipo-btn .ti-name{font-size:.78rem}
 .tipo-btn .ti-desc{font-size:.6rem;color:var(--muted);font-weight:500}
 
-/* FLOW */
 .flow-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px}
 .flow-tarea-id{font-size:1rem;font-weight:900;color:var(--yellow)}
 .flow-tarea-sub{font-size:.7rem;color:var(--muted);margin-top:2px}
 .progress-bar{height:6px;background:var(--border);border-radius:3px;overflow:hidden;margin-bottom:16px}
 .progress-fill{height:100%;background:linear-gradient(90deg,var(--yellow),var(--orange));transition:width .3s}
-
 .flow-step{display:flex;align-items:center;gap:10px;margin-bottom:12px}
 .flow-step .fs-num{width:32px;height:32px;border-radius:50%;background:var(--yellow);color:#0a0a10;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:.9rem;flex-shrink:0}
 .flow-step .fs-num.done{background:var(--success);color:white}
 .flow-step .fs-title{font-size:.9rem;font-weight:800}
-
 .flow-product{background:#0a0a10;border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:14px;text-align:center}
 .flow-product .fp-code{font-size:1.4rem;font-weight:900;color:var(--yellow);font-family:'SF Mono','Consolas',monospace;letter-spacing:.05em}
 .flow-product .fp-desc{font-size:.82rem;color:var(--text);margin-top:4px}
 .flow-product .fp-qty{font-size:2rem;font-weight:900;color:var(--text);margin-top:8px}
-
 .flow-ubicacion{background:linear-gradient(135deg,rgba(250,204,21,.15),rgba(249,115,22,.1));border:2px solid var(--yellow);border-radius:14px;padding:24px;text-align:center;margin-bottom:16px}
 .flow-ubicacion .fu-label{font-size:.7rem;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px}
 .flow-ubicacion .fu-code{font-size:2rem;font-weight:900;color:var(--yellow);font-family:'SF Mono','Consolas',monospace;letter-spacing:.08em;line-height:1.1;word-break:break-all}
-
 .flow-input-wrap{margin-bottom:14px}
 .flow-input-wrap input{width:100%;padding:18px 16px;background:#0a0a10;border:2px solid var(--yellow);border-radius:12px;color:var(--yellow);font-size:1.2rem;font-family:'SF Mono','Consolas',monospace;text-align:center;outline:none;font-weight:800;letter-spacing:.1em}
 .flow-input-wrap input::placeholder{color:#475569;font-weight:500;letter-spacing:0;font-size:.9rem}
 .flow-hint{text-align:center;font-size:.72rem;color:var(--muted);margin-top:8px}
-
 .flow-cant-wrap{background:#0a0a10;border:2px solid var(--success);border-radius:12px;padding:20px;text-align:center;margin-bottom:14px}
 .flow-cant-wrap .fc-label{font-size:.75rem;color:var(--muted);font-weight:700;margin-bottom:10px}
 .flow-cant-wrap input{width:100%;padding:12px;background:transparent;border:none;color:var(--success);font-size:2.2rem;font-family:'SF Mono','Consolas',monospace;text-align:center;outline:none;font-weight:900}
-
 .flow-error{background:rgba(239,68,68,.1);border:2px solid var(--danger);border-radius:10px;padding:14px;text-align:center;margin-bottom:14px;color:#f87171;font-weight:700;font-size:.85rem}
 
-/* Recepción */
 .rec-row{background:#0a0a10;border:1px solid var(--border);border-radius:8px;padding:10px;margin-bottom:8px}
 .rec-row .rr-fields{display:grid;grid-template-columns:90px 1fr;gap:6px;margin-bottom:6px}
 .rec-row.nuevo{border-color:var(--purple)}
@@ -205,7 +187,6 @@ body{
 .rec-row .rr-label{font-size:.62rem;color:var(--muted);margin-bottom:2px;text-transform:uppercase;font-weight:700}
 .rec-row .rr-del{background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.3);color:#f87171;border-radius:6px;width:26px;height:26px;cursor:pointer;font-size:.8rem;display:flex;align-items:center;justify-content:center;align-self:flex-end}
 
-/* Historial */
 .hist-item{background:#0a0a10;border:1px solid var(--border);border-radius:10px;padding:12px;margin-bottom:8px}
 .hist-item.hist-completada{border-left:4px solid var(--success)}
 .hist-item.hist-transferencia{border-left:4px solid var(--blue)}
@@ -216,22 +197,35 @@ body{
 .hist-item .hi-badge.transf{background:rgba(59,130,246,.15);color:#60a5fa;border:1px solid rgba(59,130,246,.3)}
 .hist-item .hi-meta{font-size:.72rem;color:var(--muted);line-height:1.5}
 
-/* Transferencia card */
 .transf-card{background:#0a0a10;border:1px solid rgba(59,130,246,.2);border-left:4px solid var(--blue);border-radius:0 12px 12px 0;padding:13px;margin-bottom:9px;transition:.2s}
-.transf-card:hover{border-color:var(--blue)}
 .transf-card .tr-head{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;margin-bottom:6px}
 .transf-card .tr-id{font-size:.9rem;font-weight:900;color:#60a5fa}
 .transf-card .tr-route{font-size:.82rem;color:var(--text);font-weight:700;margin:4px 0}
 .transf-card .tr-route span{color:var(--yellow)}
 .transf-card .tr-meta{font-size:.72rem;color:var(--muted);line-height:1.5}
 
-/* Filtros */
 .filters{background:#0a0a10;border:1px solid var(--border);border-radius:10px;padding:12px;margin-bottom:14px}
 .filters .filter-row{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px}
 .filters .filter-row:last-child{margin-bottom:0}
 .filters input,.filters select{padding:8px 10px;background:#0f0f18;border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:.8rem;font-family:inherit;outline:none}
 .filters input:focus,.filters select:focus{border-color:var(--yellow)}
 .filters label{font-size:.6rem;color:var(--muted);text-transform:uppercase;font-weight:700;letter-spacing:.05em;display:block;margin-bottom:3px}
+
+/* FIRMA */
+.firma-card{background:#0a0a10;border:1px solid var(--border);border-left:4px solid var(--success);border-radius:0 12px 12px 0;padding:13px;margin-bottom:9px;transition:.2s;cursor:pointer}
+.firma-card:hover{border-color:var(--success);transform:translateY(-1px)}
+.firma-card .fc-head{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;margin-bottom:6px}
+.firma-card .fc-id{font-size:.9rem;font-weight:900;color:var(--yellow)}
+.firma-card .fc-badge{font-size:.6rem;padding:2px 7px;border-radius:20px;font-weight:800;text-transform:uppercase;letter-spacing:.05em;background:rgba(16,185,129,.15);color:#34d399;border:1px solid rgba(16,185,129,.3)}
+.firma-card .fc-meta{font-size:.72rem;color:var(--muted);line-height:1.5}
+
+.firma-canvas{width:100%;height:200px;border:2px dashed var(--yellow);border-radius:12px;background:#fff;touch-action:none;cursor:crosshair;display:block;margin:8px 0}
+
+.timbre-preview{background:#fff;color:#000;border:3px solid #000;border-radius:4px;padding:14px;font-family:'Courier New',monospace;margin-top:12px;text-align:center}
+.timbre-preview .tp-title{font-size:.75rem;font-weight:900;letter-spacing:.1em;text-transform:uppercase;border-bottom:2px solid #000;padding-bottom:6px;margin-bottom:8px}
+.timbre-preview .tp-nombre{font-size:.95rem;font-weight:800}
+.timbre-preview .tp-fecha{font-size:.7rem;margin-top:4px}
+.timbre-preview .tp-user{font-size:.65rem;margin-top:2px;color:#555}
 
 .toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%) translateY(80px);background:var(--panel);border:1px solid var(--border);color:var(--text);padding:10px 18px;border-radius:8px;font-size:.82rem;font-weight:600;opacity:0;transition:.25s;pointer-events:none;z-index:999;max-width:90vw}
 .toast.show{transform:translateX(-50%) translateY(0);opacity:1}
@@ -278,17 +272,19 @@ body{
       <button class="menu-card" onclick="openPanel('cambiarUbi')">
         <span class="icon">📦</span><span class="name">Cambiar Ubicación</span><span class="desc">Mover entre ubicaciones</span>
       </button>
+      <button class="menu-card full" onclick="openPanel('firmas')">
+        <span class="icon">✍️</span><span class="name">Firma Cliente</span><span class="desc">Firmar entregas completadas</span>
+      </button>
     </div>
 
     <div class="stats-grid">
       <div class="stat"><div class="num" id="stProductos">0</div><div class="lbl">Productos</div></div>
       <div class="stat"><div class="num" id="stUbicaciones">0</div><div class="lbl">Ubicaciones</div></div>
       <div class="stat"><div class="num" id="stTareas">0</div><div class="lbl">Tareas Pend.</div></div>
-      <div class="stat"><div class="num" id="stTransferencias">0</div><div class="lbl">Transf. Pend.</div></div>
+      <div class="stat"><div class="num" id="stFirmas">0</div><div class="lbl">Por Firmar</div></div>
     </div>
   </div>
 
-  <!-- INVENTARIO -->
   <div id="panel-inventario" class="panel">
     <button class="back-btn" onclick="closePanel()">← Volver</button>
     <div class="card">
@@ -303,36 +299,32 @@ body{
     </div>
   </div>
 
-  <!-- SUBIR EXCEL -->
   <div id="panel-subirExcel" class="panel">
     <button class="back-btn" onclick="openPanel('inventario')">← Volver</button>
     <div class="card">
-      <h2><span class="icon">📂</span> Subir Inventario desde Excel</h2>
-      <p class="help">Formato: columna con <code>[CÓDIGO] Descripción</code> y columna siguiente con stock actual.</p>
+      <h2><span class="icon">📂</span> Subir Inventario</h2>
       <div class="drop" onclick="document.getElementById('fileExcel').click()">
         <input type="file" id="fileExcel" accept=".xlsx,.xls,.csv" onchange="subirExcel(event)">
         <div class="d-icon">📊</div>
         <div class="d-title">Toca para subir Excel/CSV</div>
-        <div class="d-hint">Reemplaza el inventario actual</div>
+        <div class="d-hint">Formato: [CÓDIGO] Descripción | Stock</div>
       </div>
       <div id="resExcel"></div>
     </div>
   </div>
 
-  <!-- VER STOCK -->
   <div id="panel-verStock" class="panel">
     <button class="back-btn" onclick="openPanel('inventario')">← Volver</button>
     <div class="card">
       <h2><span class="icon">👁️</span> Stock Actual</h2>
       <div class="search-wrap">
         <span class="s-icon">🔍</span>
-        <input type="text" id="stockBusq" placeholder="Buscar por código o descripción…" oninput="renderStock()">
+        <input type="text" id="stockBusq" placeholder="Buscar…" oninput="renderStock()">
       </div>
       <div id="listaStock"></div>
     </div>
   </div>
 
-  <!-- NUEVA UBICACIÓN -->
   <div id="panel-nuevaUbi" class="panel">
     <button class="back-btn" onclick="openPanel('inventario')">← Volver</button>
     <div class="card">
@@ -340,36 +332,28 @@ body{
       <div class="row-2">
         <div class="field"><label>Piso</label><select id="uPiso"><option value="P1">Piso 1</option><option value="P2">Piso 2</option></select></div>
         <div class="field"><label>Sector</label>
-          <select id="uSector">
-            <option value="A">A (Cercano)</option><option value="B">B (Medio)</option>
-            <option value="C">C (Lejano)</option><option value="PACK">Packing</option>
-          </select>
+          <select id="uSector"><option value="A">A (Cercano)</option><option value="B">B (Medio)</option><option value="C">C (Lejano)</option><option value="PACK">Packing</option></select>
         </div>
       </div>
       <div class="row-3">
         <div class="field"><label>Rack</label><input id="uRack" value="R01"></div>
         <div class="field"><label>Nivel</label><input id="uNivel" value="N01"></div>
-        <div class="field"><label>Dist. (m)</label><input id="uDist" type="number" value="10"></div>
+        <div class="field"><label>Dist.</label><input id="uDist" type="number" value="10"></div>
       </div>
       <button class="btn btn-primary" onclick="crearUbi()">📍 Crear</button>
       <div id="listaUbis" style="margin-top:14px"></div>
     </div>
   </div>
 
-  <!-- NUEVO PRODUCTO -->
   <div id="panel-nuevoProd" class="panel">
     <button class="back-btn" onclick="openPanel('inventario')">← Volver</button>
     <div class="card">
       <h2><span class="icon">➕</span> Crear Producto</h2>
-      <div class="field"><label>Código</label><input id="pCod" placeholder="ABC-01" style="text-transform:uppercase"></div>
-      <div class="field"><label>Descripción</label><input id="pDesc" placeholder="Descripción"></div>
+      <div class="field"><label>Código</label><input id="pCod" style="text-transform:uppercase"></div>
+      <div class="field"><label>Descripción</label><input id="pDesc"></div>
       <div class="row-2">
         <div class="field"><label>Unidad</label>
-          <select id="pUnidad">
-            <option value="UN">Unidad</option><option value="CAJA">Caja</option>
-            <option value="BOLSA">Bolsa</option><option value="M">Metro</option>
-            <option value="KG">Kilo</option><option value="LT">Litro</option>
-          </select>
+          <select id="pUnidad"><option value="UN">Unidad</option><option value="CAJA">Caja</option><option value="M">Metro</option><option value="KG">Kilo</option><option value="LT">Litro</option></select>
         </div>
         <div class="field"><label>Stock</label><input id="pStock" type="number" value="0"></div>
       </div>
@@ -377,170 +361,120 @@ body{
     </div>
   </div>
 
-  <!-- TAREAS -->
   <div id="panel-tareas" class="panel">
     <button class="back-btn" onclick="closePanel()">← Volver</button>
     <div class="card">
       <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:12px">
-        <div>
-          <h2 style="margin-bottom:2px"><span class="icon">🚀</span> Tareas Pendientes</h2>
-          <p class="help" style="margin-bottom:0">Ordenadas por prioridad</p>
-        </div>
+        <h2 style="margin-bottom:0"><span class="icon">🚀</span> Tareas Pendientes</h2>
         <button class="btn btn-ghost btn-sm" onclick="openPanel('historial')">📜 Completadas</button>
       </div>
       <div id="listaTareas"></div>
     </div>
   </div>
 
-  <!-- HISTORIAL (completadas) -->
   <div id="panel-historial" class="panel">
     <button class="back-btn" onclick="openPanel('tareas')">← Volver</button>
     <div class="card">
       <h2><span class="icon">📜</span> Tareas Completadas</h2>
-      <p class="help">Historial de picking, recepciones y transferencias procesadas.</p>
-
       <div class="filters">
         <div class="filter-row">
-          <div>
-            <label>Desde</label>
-            <input type="date" id="hDesde" onchange="renderHistorial()">
-          </div>
-          <div>
-            <label>Hasta</label>
-            <input type="date" id="hHasta" onchange="renderHistorial()">
-          </div>
+          <div><label>Desde</label><input type="date" id="hDesde" onchange="renderHistorial()"></div>
+          <div><label>Hasta</label><input type="date" id="hHasta" onchange="renderHistorial()"></div>
         </div>
         <div class="filter-row">
-          <div>
-            <label>Cliente</label>
-            <input type="text" id="hCliente" placeholder="Nombre cliente" oninput="renderHistorial()">
-          </div>
-          <div>
-            <label>N° Doc</label>
-            <input type="text" id="hDoc" placeholder="Boleta/Factura/OUT/SO" oninput="renderHistorial()">
-          </div>
+          <div><label>Cliente</label><input type="text" id="hCliente" oninput="renderHistorial()"></div>
+          <div><label>N° Doc</label><input type="text" id="hDoc" oninput="renderHistorial()"></div>
         </div>
         <div class="filter-row">
-          <div>
-            <label>Usuario</label>
-            <input type="text" id="hUsuario" placeholder="Usuario" oninput="renderHistorial()">
-          </div>
-          <div>
-            <label>Tipo</label>
-            <select id="hTipo" onchange="renderHistorial()">
-              <option value="">Todos</option>
-              <option value="boleta">Boleta</option>
-              <option value="factura">Factura</option>
-              <option value="ticket">Ticket</option>
-              <option value="transferencia">Transferencia</option>
-            </select>
+          <div><label>Usuario</label><input type="text" id="hUsuario" oninput="renderHistorial()"></div>
+          <div><label>Tipo</label>
+            <select id="hTipo" onchange="renderHistorial()"><option value="">Todos</option><option value="boleta">Boleta</option><option value="factura">Factura</option><option value="ticket">Ticket</option><option value="transferencia">Transferencia</option></select>
           </div>
         </div>
-        <button class="btn btn-ghost btn-sm" style="width:100%;margin-top:6px" onclick="limpiarFiltros()">🗑️ Limpiar filtros</button>
+        <button class="btn btn-ghost btn-sm" style="width:100%;margin-top:6px" onclick="limpiarFiltros()">🗑️ Limpiar</button>
       </div>
-
       <div id="listaHistorial"></div>
     </div>
   </div>
 
-  <!-- TRANSFERENCIAS -->
   <div id="panel-transferencias" class="panel">
     <button class="back-btn" onclick="closePanel()">← Volver</button>
     <div class="card">
       <h2><span class="icon">🔄</span> Transferencias Pendientes</h2>
-      <p class="help">Movimientos internos subidos por vendedores.</p>
       <div id="listaTransferencias"></div>
     </div>
   </div>
 
-  <!-- DETALLE TRANSFERENCIA -->
   <div id="panel-detalleTransferencia" class="panel">
     <button class="back-btn" onclick="openPanel('transferencias')">← Volver</button>
     <div class="card" id="detalleTransferenciaCont"></div>
   </div>
 
-  <!-- DETALLE TAREA -->
   <div id="panel-detalleTarea" class="panel">
     <button class="back-btn" onclick="openPanel('tareas')">← Volver</button>
     <div class="card" id="detalleTareaCont"></div>
   </div>
 
-  <!-- DETALLE RECEPCIÓN -->
   <div id="panel-detalleRecepcion" class="panel">
     <button class="back-btn" onclick="openPanel('tareas')">← Volver</button>
     <div class="card" id="detalleRecepcionCont"></div>
   </div>
 
-  <!-- FLUJO PICKING -->
   <div id="panel-pickingFlow" class="panel">
-    <div class="card">
-      <div id="pickingFlowCont"></div>
-    </div>
+    <div class="card"><div id="pickingFlowCont"></div></div>
   </div>
 
-  <!-- FLUJO ALMACENAR -->
   <div id="panel-almacenarFlow" class="panel">
-    <div class="card">
-      <div id="almacenarFlowCont"></div>
-    </div>
+    <div class="card"><div id="almacenarFlowCont"></div></div>
   </div>
 
-  <!-- RECEPCIÓN -->
   <div id="panel-recepcion" class="panel">
     <button class="back-btn" onclick="closePanel()">← Volver</button>
     <div class="card">
       <h2><span class="icon">🚚</span> Nueva Recepción</h2>
-      <p class="help">Si el producto no existe, se crea automáticamente.</p>
       <div class="row-2">
-        <div class="field"><label>RUT Proveedor</label><input id="rRut" placeholder="76.543.210-K"></div>
-        <div class="field"><label>N° Factura / Guía</label><input id="rFactura" placeholder="F-001234"></div>
+        <div class="field"><label>RUT Proveedor</label><input id="rRut"></div>
+        <div class="field"><label>N° Factura/Guía</label><input id="rFactura"></div>
       </div>
       <div class="field"><label>Fecha</label><input id="rFecha" type="date"></div>
-      <h3 style="font-size:.78rem;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin:16px 0 8px">Productos recibidos</h3>
       <div id="rProdList"></div>
       <button class="btn btn-ghost btn-sm" style="margin-top:6px" onclick="addProdRecepcion()">+ Agregar producto</button>
       <div class="btn-row" style="margin-top:16px">
         <button class="btn btn-ghost" onclick="cancelarRecepcion()">Cancelar</button>
-        <button class="btn btn-success" onclick="guardarRecepcion()">💾 Guardar recepción</button>
+        <button class="btn btn-success" onclick="guardarRecepcion()">💾 Guardar</button>
       </div>
     </div>
   </div>
 
-  <!-- TOMAR INVENTARIO -->
   <div id="panel-tomarInv" class="panel">
     <button class="back-btn" onclick="closePanel()">← Volver</button>
     <div class="card">
-      <h2><span class="icon">📋</span> Tomar Inventario · Racks</h2>
-      <p class="help">Escanea el rack, luego el producto.</p>
+      <h2><span class="icon">📋</span> Tomar Inventario</h2>
       <div id="tomarStep1">
         <div class="scan-box">
-          <div class="sb-title">Paso 1 · Código de rack/contenedor</div>
-          <input type="text" id="scanRack" placeholder="P1-A-R01-N01" autocomplete="off" onkeydown="if(event.key==='Enter'){event.preventDefault();confirmarRack()}">
+          <div class="sb-title">Paso 1 · Rack</div>
+          <input type="text" id="scanRack" placeholder="P1-A-R01-N01" onkeydown="if(event.key==='Enter'){event.preventDefault();confirmarRack()}">
         </div>
         <button class="btn btn-primary" onclick="confirmarRack()">Continuar →</button>
       </div>
       <div id="tomarStep2" style="display:none">
         <div class="info-box success" id="rackInfo"></div>
         <div style="margin-top:14px">
-          <label style="font-size:.72rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em">Tipo de contenedor</label>
+          <label style="font-size:.72rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em">Tipo</label>
           <div class="tipo-grid">
-            <button class="tipo-btn" data-tipo="Fijo" onclick="selTipo(this)"><span class="ti-icon">🗄️</span><span class="ti-name">Fijo</span><span class="ti-desc">Estantería</span></button>
-            <button class="tipo-btn" data-tipo="Móvil" onclick="selTipo(this)"><span class="ti-icon">📦</span><span class="ti-name">Móvil</span><span class="ti-desc">Caja reposición</span></button>
-            <button class="tipo-btn" data-tipo="Desechable" onclick="selTipo(this)"><span class="ti-icon">🛍️</span><span class="ti-name">Desechable</span><span class="ti-desc">Bolsa</span></button>
-            <button class="tipo-btn" data-tipo="Caja" onclick="selTipo(this)"><span class="ti-icon">📫</span><span class="ti-name">Caja</span><span class="ti-desc">Caja cerrada</span></button>
+            <button class="tipo-btn" data-tipo="Fijo" onclick="selTipo(this)"><span class="ti-icon">🗄️</span><span class="ti-name">Fijo</span></button>
+            <button class="tipo-btn" data-tipo="Móvil" onclick="selTipo(this)"><span class="ti-icon">📦</span><span class="ti-name">Móvil</span></button>
+            <button class="tipo-btn" data-tipo="Desechable" onclick="selTipo(this)"><span class="ti-icon">🛍️</span><span class="ti-name">Desechable</span></button>
+            <button class="tipo-btn" data-tipo="Caja" onclick="selTipo(this)"><span class="ti-icon">📫</span><span class="ti-name">Caja</span></button>
           </div>
         </div>
         <div class="scan-box" style="margin-top:14px">
-          <div class="sb-title">Paso 2 · Código de producto</div>
-          <input type="text" id="scanProd" placeholder="Ej: 2C03181" autocomplete="off" onkeydown="if(event.key==='Enter'){event.preventDefault();confirmarProducto()}">
+          <div class="sb-title">Paso 2 · Producto</div>
+          <input type="text" id="scanProd" placeholder="Código" onkeydown="if(event.key==='Enter'){event.preventDefault();confirmarProducto()}">
         </div>
         <div id="prodInfoBox"></div>
-        <div class="field" id="cantField" style="display:none;margin-top:12px">
-          <label>Cantidad</label><input type="number" id="prodCant" placeholder="0" min="1">
-        </div>
-        <div id="accionesProducto" style="display:none;margin-top:12px">
-          <button class="btn btn-success" onclick="agregarConteo()">✓ Agregar conteo</button>
-        </div>
+        <div class="field" id="cantField" style="display:none;margin-top:12px"><label>Cantidad</label><input type="number" id="prodCant" min="1"></div>
+        <div id="accionesProducto" style="display:none;margin-top:12px"><button class="btn btn-success" onclick="agregarConteo()">✓ Agregar</button></div>
         <div id="conteosLista" style="margin-top:16px"></div>
         <div class="btn-row" id="finalizarRow" style="display:none">
           <button class="btn btn-ghost" onclick="seguirTomando()">+ Otro rack</button>
@@ -550,28 +484,42 @@ body{
     </div>
   </div>
 
-  <!-- CAMBIAR UBICACIÓN -->
   <div id="panel-cambiarUbi" class="panel">
     <button class="back-btn" onclick="closePanel()">← Volver</button>
     <div class="card">
       <h2><span class="icon">📦</span> Cambiar Ubicación</h2>
-      <p class="help">Busca el producto, selecciona de qué ubicación mover y cuánto.</p>
-      <div class="field"><label>Código de producto</label><input id="cuProd" placeholder="Ej: 2C03181" style="text-transform:uppercase"></div>
+      <div class="field"><label>Código de producto</label><input id="cuProd" style="text-transform:uppercase"></div>
       <button class="btn btn-primary" onclick="buscarParaMover()">🔍 Buscar</button>
       <div id="cuResultado" style="margin-top:14px"></div>
     </div>
+  </div>
+
+  <!-- FIRMAS: LISTA -->
+  <div id="panel-firmas" class="panel">
+    <button class="back-btn" onclick="closePanel()">← Volver</button>
+    <div class="card">
+      <h2><span class="icon">✍️</span> Firma Cliente</h2>
+      <p class="help">Tareas entregadas que aún no tienen firma del cliente.</p>
+      <div id="listaFirmas"></div>
+    </div>
+  </div>
+
+  <!-- FIRMAS: FORMULARIO -->
+  <div id="panel-firmaCliente" class="panel">
+    <button class="back-btn" onclick="openPanel('firmas')">← Volver</button>
+    <div class="card" id="firmaClienteCont"></div>
   </div>
 </main>
 
 <div class="toast" id="toast"></div>
 
 <script>
-/* ============================================================
-   STORAGE
-   ============================================================ */
+if(window.pdfjsLib) pdfjsLib.GlobalWorkerOptions.workerSrc =
+  'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+
 const Store = {
   get(k){ try{ return localStorage.getItem(k)||sessionStorage.getItem(k); }catch{ return null; } },
-  set(k,v,perm=true){ try{ perm?localStorage.setItem(k,v):sessionStorage.setItem(k,v); }catch{} },
+  set(k,v,p=true){ try{ p?localStorage.setItem(k,v):sessionStorage.setItem(k,v); }catch{} },
   remove(k){ try{ localStorage.removeItem(k); sessionStorage.removeItem(k); }catch{} }
 };
 const SESSION_KEY = 'vca_session';
@@ -589,9 +537,6 @@ function cargarSesion(){
 }
 function logout(){ Store.remove(SESSION_KEY); window.location.href = 'index.html'; }
 
-/* ============================================================
-   UTIL
-   ============================================================ */
 function toast(msg, tipo='info'){
   const t = document.getElementById('toast');
   t.textContent = msg;
@@ -616,6 +561,7 @@ function openPanel(id){
   if(id === 'cambiarUbi') resetCambiarUbi();
   if(id === 'transferencias') renderTransferencias();
   if(id === 'historial') renderHistorial();
+  if(id === 'firmas') renderFirmas();
 }
 function closePanel(){
   document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
@@ -624,9 +570,6 @@ function closePanel(){
   renderStats();
 }
 
-/* ============================================================
-   DATOS
-   ============================================================ */
 function getInventario(){ try{ return JSON.parse(Store.get('vca_inventario') || '[]'); }catch{ return []; } }
 function setInventario(v){ Store.set('vca_inventario', JSON.stringify(v)); }
 function getUbicaciones(){ try{ return JSON.parse(Store.get('vca_ubicaciones') || '[]'); }catch{ return []; } }
@@ -643,24 +586,26 @@ function getMovimientos(){ try{ return JSON.parse(Store.get('vca_movimientos') |
 function setMovimientos(v){ Store.set('vca_movimientos', JSON.stringify(v)); }
 
 function migrarDatos(){
-  const tareas = getTareas();
-  let cambio = false;
-  tareas.forEach(t => {
-    (t.items || []).forEach(it => {
-      if(it.estado === undefined){ it.estado = 'pendiente'; cambio = true; }
-      if(it.ubicacionAsignada === undefined){ it.ubicacionAsignada = null; cambio = true; }
+  const t = getTareas();
+  let c = false;
+  t.forEach(x => {
+    if(x.firmada === undefined){ x.firmada = false; c = true; }
+    (x.items || []).forEach(it => {
+      if(it.estado === undefined){ it.estado = 'pendiente'; c = true; }
+      if(it.ubicacionAsignada === undefined){ it.ubicacionAsignada = null; c = true; }
     });
   });
-  if(cambio) setTareas(tareas);
+  if(c) setTareas(t);
 
-  const recs = getRecepciones();
-  let cambioRec = false;
-  recs.forEach(r => {
-    (r.items || []).forEach(it => {
-      if(it.estado === undefined){ it.estado = 'pendiente'; cambioRec = true; }
+  const r = getRecepciones();
+  let cr = false;
+  r.forEach(x => {
+    if(x.firmada === undefined){ x.firmada = false; cr = true; }
+    (x.items || []).forEach(it => {
+      if(it.estado === undefined){ it.estado = 'pendiente'; cr = true; }
     });
   });
-  if(cambioRec) setRecepciones(recs);
+  if(cr) setRecepciones(r);
 }
 
 function getPrioridad(t){
@@ -671,9 +616,7 @@ function getPrioridad(t){
 
 function getTareasOrdenadas(){
   const tareas = getTareas().filter(t => t.estado === 'pendiente' || t.estado === 'en_proceso');
-  const receps = getRecepciones()
-    .filter(r => r.estado === 'por_almacenar')
-    .map(r => ({ ...r, _esRecepcion:true }));
+  const receps = getRecepciones().filter(r => r.estado === 'por_almacenar').map(r => ({ ...r, _esRecepcion:true }));
   const todo = [...tareas, ...receps];
   todo.sort((a,b) => {
     const pA = getPrioridad(a), pB = getPrioridad(b);
@@ -683,34 +626,26 @@ function getTareasOrdenadas(){
   return todo;
 }
 
-/* ============================================================
-   STATS
-   ============================================================ */
 function renderStats(){
   document.getElementById('stProductos').textContent = getInventario().length;
   document.getElementById('stUbicaciones').textContent = getUbicaciones().length;
   document.getElementById('stTareas').textContent =
     getTareas().filter(t => t.estado === 'pendiente' || t.estado === 'en_proceso').length;
-  const transfPend = getTareas().filter(t => t.tipo === 'transferencia' && t.estado === 'pendiente').length;
-  document.getElementById('stTransferencias').textContent = transfPend;
+  const porFirmar = getTareas().filter(t => t.estado === 'completada' && !t.firmada && t.tipo !== 'transferencia').length;
+  document.getElementById('stFirmas').textContent = porFirmar;
 }
 
-/* ============================================================
-   SUBIR EXCEL
-   ============================================================ */
+/* ============ EXCEL ============ */
 async function subirExcel(event){
   const file = event.target.files[0];
   if(!file) return;
   event.target.value = '';
   const cont = document.getElementById('resExcel');
-  cont.innerHTML = '<div class="info-box">⏳ Procesando Excel…</div>';
-
+  cont.innerHTML = '<div class="info-box">⏳ Procesando…</div>';
   try{
     const ab = await file.arrayBuffer();
     const wb = XLSX.read(ab, { type:'array' });
-    const sheet = wb.Sheets[wb.SheetNames[0]];
-    const rows = XLSX.utils.sheet_to_json(sheet, { header:1, defval:'', blankrows:false });
-
+    const rows = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], { header:1, defval:'', blankrows:false });
     const productos = [];
     for(const row of rows){
       for(let i = 0; i < row.length; i++){
@@ -730,146 +665,74 @@ async function subirExcel(event){
         }
       }
     }
-
-    if(productos.length === 0){
-      cont.innerHTML = '<div class="info-box error">⚠️ No se detectaron productos con formato <strong>[CÓDIGO] descripción</strong>.</div>';
-      return;
-    }
-
-    const anterior = getInventario();
+    if(productos.length === 0) return cont.innerHTML = '<div class="info-box error">⚠️ No se detectaron productos.</div>';
     setInventario(productos);
-
-    let comparativa = '';
-    if(anterior.length > 0){
-      const mapAnt = new Map(anterior.map(p => [p.codigo, p]));
-      const mapNuevo = new Map(productos.map(p => [p.codigo, p]));
-      const nuevos = productos.filter(p => !mapAnt.has(p.codigo)).length;
-      const eliminados = anterior.filter(p => !mapNuevo.has(p.codigo)).length;
-      const modificados = productos.filter(p => {
-        const a = mapAnt.get(p.codigo);
-        return a && a.stock !== p.stock;
-      }).length;
-      comparativa = `<br><strong>Comparativa:</strong> ${nuevos} nuevos · ${eliminados} eliminados · ${modificados} con cambio.`;
-    }
-
-    cont.innerHTML = `<div class="info-box success">✅ <strong>${productos.length} productos</strong> cargados.${comparativa}</div>`;
+    cont.innerHTML = `<div class="info-box success">✅ ${productos.length} productos cargados.</div>`;
     toast(`${productos.length} productos cargados`, 'success');
-  }catch(e){
-    cont.innerHTML = `<div class="info-box error">❌ ${escapeHtml(e.message)}</div>`;
-    toast('Error procesando Excel', 'error');
-  }
+  }catch(e){ cont.innerHTML = `<div class="info-box error">❌ ${escapeHtml(e.message)}</div>`; }
 }
 
-/* ============================================================
-   VER STOCK
-   ============================================================ */
+/* ============ STOCK ============ */
 function getStockVerificado(codigo){
-  const conteos = getConteos().filter(c => c.codigo === codigo);
-  if(conteos.length === 0) return null;
-  return conteos.reduce((s, c) => s + (c.cantidad || 0), 0);
+  const c = getConteos().filter(x => x.codigo === codigo);
+  return c.length === 0 ? null : c.reduce((s, x) => s + (x.cantidad || 0), 0);
 }
-
 function renderStock(){
   const cont = document.getElementById('listaStock');
   const q = (document.getElementById('stockBusq')?.value || '').trim().toLowerCase();
   const inv = getInventario();
-  const filtrados = q
-    ? inv.filter(p => p.codigo.toLowerCase().includes(q) || (p.desc||'').toLowerCase().includes(q))
-    : inv;
-
-  if(filtrados.length === 0){
-    cont.innerHTML = q
-      ? '<div class="empty"><div class="e-icon">📭</div><div>Sin resultados</div></div>'
-      : '<div class="empty"><div class="e-icon">📦</div><div>Sin inventario cargado</div></div>';
-    return;
-  }
-
-  const limite = q ? 100 : 50;
-  cont.innerHTML = filtrados.slice(0, limite).map(p => {
-    const verif = getStockVerificado(p.codigo);
-    const tieneVerif = verif !== null;
+  const f = q ? inv.filter(p => p.codigo.toLowerCase().includes(q) || (p.desc||'').toLowerCase().includes(q)) : inv;
+  if(f.length === 0) return cont.innerHTML = '<div class="empty"><div class="e-icon">📦</div><div>Sin datos</div></div>';
+  cont.innerHTML = f.slice(0, 100).map(p => {
+    const v = getStockVerificado(p.codigo);
     return `<div class="stock-item">
       <div class="si-code">${escapeHtml(p.codigo)}</div>
       <div class="si-desc">${escapeHtml(p.desc)}</div>
       <div class="si-stocks">
-        <div class="si-stock-box sistema">
-          <div class="si-stock-num">${p.stock}</div>
-          <div class="si-stock-lbl">Stock Sistema</div>
-        </div>
-        <div class="si-stock-box verif ${tieneVerif ? '' : 'off'}">
-          <div class="si-stock-num">${tieneVerif ? verif : '—'}</div>
-          <div class="si-stock-lbl">${tieneVerif ? '✓ Verificado' : 'Sin verificar'}</div>
-        </div>
+        <div class="si-stock-box sistema"><div class="si-stock-num">${p.stock}</div><div class="si-stock-lbl">Sistema</div></div>
+        <div class="si-stock-box verif ${v === null ? 'off' : ''}"><div class="si-stock-num">${v === null ? '—' : v}</div><div class="si-stock-lbl">${v === null ? 'Sin verif.' : '✓ Verificado'}</div></div>
       </div>
     </div>`;
-  }).join('') + (filtrados.length > limite ? `<div style="text-align:center;padding:10px;color:var(--muted);font-size:.78rem">Mostrando ${limite} de ${filtrados.length}…</div>` : '');
+  }).join('');
 }
 
-/* ============================================================
-   UBICACIONES
-   ============================================================ */
+/* ============ UBICACIONES ============ */
 function crearUbi(){
-  const piso = document.getElementById('uPiso').value;
-  const sector = document.getElementById('uSector').value;
+  const piso = document.getElementById('uPiso').value, sector = document.getElementById('uSector').value;
   const rack = document.getElementById('uRack').value.trim().toUpperCase();
   const nivel = document.getElementById('uNivel').value.trim().toUpperCase();
   const dist = parseInt(document.getElementById('uDist').value) || 0;
   if(!rack || !nivel) return toast('Completa Rack y Nivel','error');
   const codigo = `${piso}-${sector}-${rack}-${nivel}`;
   const ubis = getUbicaciones();
-  if(ubis.find(u => u.codigo === codigo)) return toast('Esa ubicación ya existe','error');
+  if(ubis.find(u => u.codigo === codigo)) return toast('Ya existe','error');
   ubis.push({ codigo, piso, sector, rack, nivel, distancia: dist });
   setUbicaciones(ubis);
-  toast('Ubicación creada: ' + codigo,'success');
-  document.getElementById('uRack').value = 'R01';
-  document.getElementById('uNivel').value = 'N01';
+  toast('Creada: ' + codigo,'success');
   renderUbis();
 }
-
 function renderUbis(){
   const cont = document.getElementById('listaUbis');
   const ubis = getUbicaciones();
-  if(ubis.length === 0){
-    cont.innerHTML = '<div class="empty"><div class="e-icon">📍</div><div>Sin ubicaciones</div></div>';
-    return;
-  }
-  cont.innerHTML = ubis.map(u => `
-    <div class="list-item">
-      <div class="li-info">
-        <div class="li-title">${escapeHtml(u.codigo)}${u.ficticia ? ' 🎲' : ''}</div>
-        <div class="li-sub">Distancia: ${u.distancia}m</div>
-      </div>
-    </div>
-  `).join('');
+  if(ubis.length === 0) return cont.innerHTML = '<div class="empty"><div class="e-icon">📍</div><div>Sin ubicaciones</div></div>';
+  cont.innerHTML = ubis.map(u => `<div class="list-item"><div class="li-info"><div class="li-title">${escapeHtml(u.codigo)}${u.ficticia?' 🎲':''}</div><div class="li-sub">${u.distancia}m</div></div></div>`).join('');
 }
-
 function generarUbicacionesDemo(){
   const ubis = getUbicaciones();
-  let creadas = 0;
-  for(const piso of ['P1','P2']){
-    for(const sector of ['A','B','C']){
-      for(let r = 1; r <= 4; r++){
-        if(creadas >= 20) break;
-        const rack = 'R' + String(r).padStart(2,'0');
-        const nivel = 'N0' + (1 + Math.floor(Math.random() * 3));
-        const codigo = `${piso}-${sector}-${rack}-${nivel}`;
-        if(ubis.find(u => u.codigo === codigo)) continue;
-        const distancia = 5 + Math.floor(Math.random() * 40);
-        ubis.push({ codigo, piso, sector, rack, nivel, distancia, ficticia: true });
-        creadas++;
-      }
-      if(creadas >= 20) break;
-    }
-    if(creadas >= 20) break;
+  let c = 0;
+  for(const p of ['P1','P2']) for(const s of ['A','B','C']) for(let r = 1; r <= 4; r++){
+    if(c >= 20) break;
+    const codigo = `${p}-${s}-R${String(r).padStart(2,'0')}-N01`;
+    if(ubis.find(u => u.codigo === codigo)) continue;
+    ubis.push({ codigo, piso:p, sector:s, rack:'R'+r, nivel:'N01', distancia: 5 + Math.floor(Math.random()*40), ficticia:true });
+    c++;
   }
   setUbicaciones(ubis);
-  toast(`🎲 ${creadas} ubicaciones ficticias creadas`, 'success');
+  toast(`🎲 ${c} ubicaciones`, 'success');
   renderStats();
 }
 
-/* ============================================================
-   CREAR PRODUCTO
-   ============================================================ */
+/* ============ PRODUCTOS ============ */
 function crearProd(){
   const cod = document.getElementById('pCod').value.trim().toUpperCase();
   const desc = document.getElementById('pDesc').value.trim();
@@ -877,7 +740,7 @@ function crearProd(){
   const stock = parseInt(document.getElementById('pStock').value) || 0;
   if(!cod || !desc) return toast('Completa código y descripción','error');
   const inv = getInventario();
-  if(inv.find(p => p.codigo === cod)) return toast('Ese código ya existe','error');
+  if(inv.find(p => p.codigo === cod)) return toast('Ya existe','error');
   inv.push({ codigo: cod, desc, unidad, stock });
   setInventario(inv);
   toast('Producto creado','success');
@@ -886,18 +749,11 @@ function crearProd(){
   document.getElementById('pStock').value = '0';
 }
 
-/* ============================================================
-   TAREAS
-   ============================================================ */
+/* ============ TAREAS ============ */
 function renderTareas(){
   const cont = document.getElementById('listaTareas');
   const todo = getTareasOrdenadas();
-
-  if(todo.length === 0){
-    cont.innerHTML = '<div class="empty"><div class="e-icon">✅</div><div>Sin tareas pendientes</div></div>';
-    return;
-  }
-
+  if(todo.length === 0) return cont.innerHTML = '<div class="empty"><div class="e-icon">✅</div><div>Sin tareas pendientes</div></div>';
   cont.innerHTML = todo.map(t => {
     const esRec = t._esRecepcion;
     const esTransf = t.tipo === 'transferencia';
@@ -906,83 +762,52 @@ function renderTareas(){
     const prioLbl = esTransf ? '🔄 Transferencia' : (prio === 1 ? '⚡ Inmediata' : prio === 2 ? '🚚 Recepción' : '📅 Posterior');
     const fecha = new Date(t.fecha || t.fechaCreacion || Date.now()).toLocaleString('es-CL', { day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit' });
     const items = t.items || [];
-    const pendientes = items.filter(i => i.estado !== 'completado' && i.estado !== 'almacenado').length;
-    const total = items.length;
+    const pend = items.filter(i => i.estado !== 'completado' && i.estado !== 'almacenado').length;
     const sinUbic = items.filter(i => i.estado !== 'completado' && !i.ubicacionAsignada).length;
-
-    let acciones = '';
-    if(esRec){
-      acciones = `<div class="tc-actions">
-        <button class="btn btn-primary btn-sm" onclick="iniciarAlmacenarFlow('${t.id}')">▶️ Almacenar</button>
-        <button class="btn btn-ghost btn-sm" onclick="verDetalleRecepcion('${t.id}')">📦 Ver detalle</button>
-      </div>`;
-    } else if(esTransf){
-      acciones = `<div class="tc-actions">
-        <button class="btn btn-blue btn-sm" onclick="verDetalleTransferencia('${t.id}')">🔄 Ver transferencia</button>
-      </div>`;
-    } else {
-      acciones = `<div class="tc-actions">
-        ${sinUbic > 0 ? `<button class="btn btn-purple btn-sm" onclick="asignarUbicFicticiaTarea('${t.id}')">🎲 Asignar ubic. (${sinUbic})</button>` : ''}
-        <button class="btn btn-primary btn-sm" onclick="iniciarPickingFlow('${t.id}')">▶️ Iniciar Picking</button>
-        <button class="btn btn-ghost btn-sm" onclick="verDetalleTarea('${t.id}')">📦 Ver detalle</button>
-      </div>`;
-    }
-
+    let acc = '';
+    if(esRec) acc = `<button class="btn btn-primary btn-sm" onclick="iniciarAlmacenarFlow('${t.id}')">▶️ Almacenar</button> <button class="btn btn-ghost btn-sm" onclick="verDetalleRecepcion('${t.id}')">📦 Ver</button>`;
+    else if(esTransf) acc = `<button class="btn btn-blue btn-sm" onclick="verDetalleTransferencia('${t.id}')">🔄 Ver</button>`;
+    else acc = `${sinUbic > 0 ? `<button class="btn btn-purple btn-sm" onclick="asignarUbicFicticiaTarea('${t.id}')">🎲 Ubic. (${sinUbic})</button> ` : ''}<button class="btn btn-primary btn-sm" onclick="iniciarPickingFlow('${t.id}')">▶️ Picking</button> <button class="btn btn-ghost btn-sm" onclick="verDetalleTarea('${t.id}')">📦 Ver</button>`;
     return `<div class="tarea-card ${prioCls}">
       <div class="tc-head">
-        <div>
-          <div class="tc-id">${escapeHtml(t.id)}</div>
-          <span class="tc-badge ${prioCls}">${prioLbl}</span>
-        </div>
-        <div style="text-align:right;flex-shrink:0">
-          <div style="font-size:1.1rem;font-weight:900">${pendientes}/${total}</div>
-          <div style="font-size:.6rem;color:var(--muted);text-transform:uppercase">pendientes</div>
-        </div>
+        <div><div class="tc-id">${escapeHtml(t.id)}</div><span class="tc-badge ${prioCls}">${prioLbl}</span></div>
+        <div style="text-align:right"><div style="font-size:1.1rem;font-weight:900">${pend}/${items.length}</div><div style="font-size:.6rem;color:var(--muted);text-transform:uppercase">pend.</div></div>
       </div>
       <div class="tc-meta">
         ${t.empresa ? `<strong>${escapeHtml(t.empresa)}</strong><br>` : ''}
-        ${esRec ? `Proveedor: ${escapeHtml(t.rut || '—')} · Factura: ${escapeHtml(t.numFactura || '—')}` : ''}
-        ${esTransf ? `Origen: ${escapeHtml(t.origen || '—')} → Destino: ${escapeHtml(t.destino || '—')} · Conductor: ${escapeHtml(t.conductor || '—')}` : ''}
+        ${esRec ? `Prov: ${escapeHtml(t.rut||'—')} · Fac: ${escapeHtml(t.numFactura||'—')}` : ''}
+        ${esTransf ? `${escapeHtml(t.origen||'?')} → ${escapeHtml(t.destino||'?')} · Cond: ${escapeHtml(t.conductor||'—')}` : ''}
         ${!esRec && !esTransf && t.numOut ? `OUT: ${escapeHtml(t.numOut)}` : ''}
         ${!esRec && !esTransf && t.numSO ? ` · SO: ${escapeHtml(t.numSO)}` : ''}
-        ${!esRec && !esTransf && t.numBoleta ? `Boleta N°: ${escapeHtml(t.numBoleta)}` : ''}
-        ${!esRec && !esTransf && t.numFactura ? `Factura N°: ${escapeHtml(t.numFactura)}` : ''}
-        <br>👤 ${escapeHtml(t.usuario || '—')} · ${fecha}
+        <br>👤 ${escapeHtml(t.usuario||'—')} · ${fecha}
       </div>
-      ${acciones}
+      <div class="tc-actions">${acc}</div>
     </div>`;
   }).join('');
 }
 
 function asignarUbicFicticiaTarea(id){
   const tareas = getTareas();
-  const tarea = tareas.find(t => t.id === id);
-  if(!tarea) return;
-
+  const t = tareas.find(x => x.id === id);
+  if(!t) return;
   let ubis = getUbicaciones();
   if(ubis.length === 0){ generarUbicacionesDemo(); ubis = getUbicaciones(); }
-
-  let asignados = 0;
-  (tarea.items || []).forEach(it => {
+  let n = 0;
+  (t.items || []).forEach(it => {
     if(!it.ubicacionAsignada && it.estado !== 'completado'){
-      const ubi = ubis[Math.floor(Math.random() * ubis.length)];
-      it.ubicacionAsignada = ubi.codigo;
-      asignados++;
+      it.ubicacionAsignada = ubis[Math.floor(Math.random() * ubis.length)].codigo;
+      n++;
     }
   });
-
   setTareas(tareas);
-  toast(`🎲 ${asignados} ubicaciones sugeridas (tarea sigue pendiente)`, 'success');
+  toast(`🎲 ${n} ubicaciones asignadas`, 'success');
   renderTareas();
 }
 
-/* ============================================================
-   HISTORIAL
-   ============================================================ */
+/* ============ HISTORIAL ============ */
 function renderHistorial(){
   const cont = document.getElementById('listaHistorial');
   if(!cont) return;
-
   const desde = document.getElementById('hDesde')?.value || '';
   const hasta = document.getElementById('hHasta')?.value || '';
   const cliente = (document.getElementById('hCliente')?.value || '').toLowerCase().trim();
@@ -990,782 +815,375 @@ function renderHistorial(){
   const usuario = (document.getElementById('hUsuario')?.value || '').toLowerCase().trim();
   const tipo = document.getElementById('hTipo')?.value || '';
 
-  // Recolectar tareas completadas + recepciones completadas
   const tareas = getTareas().filter(t => t.estado === 'completada');
-  const receps = getRecepciones().filter(r => r.estado === 'completada').map(r => ({
-    ...r, _esRecepcion:true, tipo:'recepcion'
-  }));
+  const receps = getRecepciones().filter(r => r.estado === 'completada').map(r => ({ ...r, _esRecepcion:true, tipo:'recepcion' }));
   let todo = [...tareas, ...receps];
 
-  // Aplicar filtros
   todo = todo.filter(t => {
-    const fechaStr = t.fechaCompletada || t.fecha || t.fechaCreacion || '';
-    const fecha = fechaStr ? new Date(fechaStr) : null;
-
-    if(desde && fecha && fecha < new Date(desde)) return false;
-    if(hasta && fecha){
-      const hastaFin = new Date(hasta);
-      hastaFin.setHours(23,59,59,999);
-      if(fecha > hastaFin) return false;
-    }
-
-    if(cliente){
-      const emp = (t.empresa || '').toLowerCase();
-      if(!emp.includes(cliente)) return false;
-    }
-
+    const fecha = new Date(t.fechaCompletada || t.fecha || t.fechaCreacion || 0);
+    if(desde && fecha < new Date(desde)) return false;
+    if(hasta){ const f = new Date(hasta); f.setHours(23,59,59,999); if(fecha > f) return false; }
+    if(cliente && !(t.empresa || '').toLowerCase().includes(cliente)) return false;
     if(doc){
-      const str = [
-        t.numBoleta, t.numFactura, t.numOut, t.numSO
-      ].filter(Boolean).join(' ').toLowerCase();
-      if(!str.includes(doc)) return false;
+      const s = [t.numBoleta, t.numFactura, t.numOut, t.numSO].filter(Boolean).join(' ').toLowerCase();
+      if(!s.includes(doc)) return false;
     }
-
-    if(usuario){
-      const u = (t.usuario || t.completadaPor || '').toLowerCase();
-      if(!u.includes(usuario)) return false;
-    }
-
+    if(usuario && !(t.usuario || t.completadaPor || '').toLowerCase().includes(usuario)) return false;
     if(tipo && t.tipo !== tipo) return false;
-
     return true;
   });
 
-  // Ordenar por fecha descendente
-  todo.sort((a,b) => {
-    const fA = new Date(a.fechaCompletada || a.fecha || a.fechaCreacion || 0);
-    const fB = new Date(b.fechaCompletada || b.fecha || b.fechaCreacion || 0);
-    return fB - fA;
-  });
+  todo.sort((a,b) => new Date(b.fechaCompletada || b.fecha || 0) - new Date(a.fechaCompletada || a.fecha || 0));
 
-  if(todo.length === 0){
-    cont.innerHTML = '<div class="empty"><div class="e-icon">📜</div><div>Sin tareas completadas con esos filtros</div></div>';
-    return;
-  }
+  if(todo.length === 0) return cont.innerHTML = '<div class="empty"><div class="e-icon">📜</div><div>Sin tareas completadas</div></div>';
 
   cont.innerHTML = todo.map(t => {
-    const esTransf = t.tipo === 'transferencia';
-    const esRec = t._esRecepcion;
-    const tipoLbl = {
-      boleta:'Boleta', factura:'Factura', ticket:'Ticket',
-      transferencia:'Transferencia', recepcion:'Recepción'
-    }[t.tipo] || t.tipo;
-
-    const fecha = new Date(t.fechaCompletada || t.fecha || t.fechaCreacion || Date.now())
-      .toLocaleString('es-CL', { day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit' });
-
-    const doneBy = t.completadaPor || t.usuario || '—';
-
-    return `<div class="hist-item ${esTransf ? 'hist-transferencia' : 'hist-completada'}">
+    const esT = t.tipo === 'transferencia';
+    const tipoLbl = { boleta:'Boleta', factura:'Factura', ticket:'Ticket', transferencia:'Transferencia', recepcion:'Recepción' }[t.tipo] || t.tipo;
+    const fecha = new Date(t.fechaCompletada || t.fecha || Date.now()).toLocaleString('es-CL', { day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit' });
+    return `<div class="hist-item ${esT ? 'hist-transferencia' : 'hist-completada'}">
       <div class="hi-head">
-        <div>
-          <div class="hi-id">${escapeHtml(t.id)}</div>
-          <span class="hi-badge ${esTransf ? 'transf' : 'done'}">${tipoLbl}</span>
-        </div>
-        <div style="text-align:right;flex-shrink:0">
-          <div style="font-size:1.1rem;font-weight:900">${(t.items || []).length}</div>
-          <div style="font-size:.6rem;color:var(--muted);text-transform:uppercase">ítems</div>
-        </div>
+        <div><div class="hi-id">${escapeHtml(t.id)}</div><span class="hi-badge ${esT ? 'transf' : 'done'}">${tipoLbl}</span></div>
+        <div style="text-align:right"><div style="font-size:1.1rem;font-weight:900">${(t.items||[]).length}</div><div style="font-size:.6rem;color:var(--muted);text-transform:uppercase">ítems</div></div>
       </div>
       <div class="hi-meta">
         ${t.empresa ? `<strong>${escapeHtml(t.empresa)}</strong><br>` : ''}
-        ${t.rut ? `RUT: ${escapeHtml(t.rut)}<br>` : ''}
-        ${t.numBoleta ? `Boleta N°: ${escapeHtml(t.numBoleta)}<br>` : ''}
-        ${t.numFactura ? `Factura N°: ${escapeHtml(t.numFactura)}<br>` : ''}
-        ${t.numOut ? `OUT: ${escapeHtml(t.numOut)}${t.numSO ? ' · SO: ' + escapeHtml(t.numSO) : ''}<br>` : ''}
-        ${esTransf ? `Origen: ${escapeHtml(t.origen || '—')} → Destino: ${escapeHtml(t.destino || '—')} · Conductor: ${escapeHtml(t.conductor || '—')}<br>` : ''}
-        ${esRec ? `Proveedor: ${escapeHtml(t.rut || '—')} · Factura: ${escapeHtml(t.numFactura || '—')}<br>` : ''}
-        👤 <strong>${escapeHtml(doneBy)}</strong> · 📅 ${fecha}
+        ${t.numBoleta ? `Boleta: ${escapeHtml(t.numBoleta)}<br>` : ''}
+        ${t.numFactura ? `Factura: ${escapeHtml(t.numFactura)}<br>` : ''}
+        ${t.numOut ? `OUT: ${escapeHtml(t.numOut)}${t.numSO?' · SO: '+escapeHtml(t.numSO):''}<br>` : ''}
+        ${esT ? `${escapeHtml(t.origen||'?')} → ${escapeHtml(t.destino||'?')}<br>` : ''}
+        👤 <strong>${escapeHtml(t.completadaPor || t.usuario || '—')}</strong> · 📅 ${fecha}
       </div>
     </div>`;
   }).join('');
 }
-
 function limpiarFiltros(){
-  document.getElementById('hDesde').value = '';
-  document.getElementById('hHasta').value = '';
-  document.getElementById('hCliente').value = '';
-  document.getElementById('hDoc').value = '';
-  document.getElementById('hUsuario').value = '';
-  document.getElementById('hTipo').value = '';
+  ['hDesde','hHasta','hCliente','hDoc','hUsuario','hTipo'].forEach(id => document.getElementById(id).value = '');
   renderHistorial();
 }
 
-/* ============================================================
-   TRANSFERENCIAS
-   ============================================================ */
+/* ============ TRANSFERENCIAS ============ */
 function renderTransferencias(){
   const cont = document.getElementById('listaTransferencias');
-  const transf = getTareas().filter(t => t.tipo === 'transferencia' && t.estado !== 'completada');
-
-  if(transf.length === 0){
-    cont.innerHTML = '<div class="empty"><div class="e-icon">🔄</div><div>Sin transferencias pendientes</div></div>';
-    return;
-  }
-
-  cont.innerHTML = transf.map(t => {
-    const fecha = new Date(t.fecha || Date.now()).toLocaleString('es-CL', { day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit' });
+  const t = getTareas().filter(x => x.tipo === 'transferencia' && x.estado !== 'completada');
+  if(t.length === 0) return cont.innerHTML = '<div class="empty"><div class="e-icon">🔄</div><div>Sin transferencias</div></div>';
+  cont.innerHTML = t.map(x => {
+    const fecha = new Date(x.fecha || Date.now()).toLocaleString('es-CL', { day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit' });
     return `<div class="transf-card">
-      <div class="tr-head">
-        <div class="tr-id">${escapeHtml(t.id)}</div>
-        <div style="font-size:.7rem;color:var(--muted);text-align:right">
-          ${(t.items || []).length} productos<br>${fecha}
-        </div>
-      </div>
-      <div class="tr-route">
-        <span>${escapeHtml(t.origen || '?')}</span> → <span>${escapeHtml(t.destino || '?')}</span>
-      </div>
-      <div class="tr-meta">
-        🚚 Conductor: ${escapeHtml(t.conductor || '—')}<br>
-        👤 Subida por: ${escapeHtml(t.usuario || '—')}
-      </div>
-      <div class="tc-actions" style="margin-top:10px">
-        <button class="btn btn-blue btn-sm" onclick="verDetalleTransferencia('${t.id}')">🔄 Ver y procesar</button>
-      </div>
+      <div class="tr-head"><div class="tr-id">${escapeHtml(x.id)}</div><div style="font-size:.7rem;color:var(--muted);text-align:right">${(x.items||[]).length} prod<br>${fecha}</div></div>
+      <div class="tr-route"><span>${escapeHtml(x.origen||'?')}</span> → <span>${escapeHtml(x.destino||'?')}</span></div>
+      <div class="tr-meta">🚚 ${escapeHtml(x.conductor||'—')}<br>👤 ${escapeHtml(x.usuario||'—')}</div>
+      <button class="btn btn-blue btn-sm" style="margin-top:10px" onclick="verDetalleTransferencia('${x.id}')">🔄 Ver</button>
     </div>`;
   }).join('');
 }
-
 function verDetalleTransferencia(id){
   const t = getTareas().find(x => x.id === id);
-  if(!t) return toast('Transferencia no encontrada', 'error');
+  if(!t) return;
   openPanel('detalleTransferencia');
-
-  const fecha = new Date(t.fecha || Date.now()).toLocaleString('es-CL');
-
-  let html = `
-    <h2><span class="icon">🔄</span> ${escapeHtml(t.id)}</h2>
-    <p class="help">Movimiento interno entre bodegas.</p>
-    <div class="info-box blue">
-      <strong>Origen:</strong> ${escapeHtml(t.origen || '—')}<br>
-      <strong>Destino:</strong> ${escapeHtml(t.destino || '—')}<br>
-      <strong>Conductor:</strong> ${escapeHtml(t.conductor || '—')}<br>
-      <strong>Subida por:</strong> ${escapeHtml(t.usuario || '—')}<br>
-      <strong>Fecha:</strong> ${fecha}
-    </div>
-    <h3 style="font-size:.75rem;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin:16px 0 8px">
-      Productos a transferir
-    </h3>
-  `;
-
-  (t.items || []).forEach((it, i) => {
-    html += `<div class="ruta-step">
-      <div class="rs-num">${i+1}</div>
-      <div class="rs-info">
-        <div class="rs-ubi">${escapeHtml(it.codigo)}</div>
-        <div class="rs-prod">${escapeHtml(it.desc)}</div>
-      </div>
-      <div class="rs-qty">x${it.qty}</div>
-    </div>`;
+  let html = `<h2><span class="icon">🔄</span> ${escapeHtml(t.id)}</h2>
+    <div class="info-box blue"><strong>Origen:</strong> ${escapeHtml(t.origen||'—')}<br><strong>Destino:</strong> ${escapeHtml(t.destino||'—')}<br><strong>Conductor:</strong> ${escapeHtml(t.conductor||'—')}<br><strong>Usuario:</strong> ${escapeHtml(t.usuario||'—')}</div>
+    <h3 style="font-size:.75rem;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin:16px 0 8px">Productos</h3>`;
+  (t.items||[]).forEach((it, i) => {
+    html += `<div class="ruta-step"><div class="rs-num">${i+1}</div><div class="rs-info"><div class="rs-ubi">${escapeHtml(it.codigo)}</div><div class="rs-prod">${escapeHtml(it.desc)}</div></div><div class="rs-qty">x${it.qty}</div></div>`;
   });
-
-  // Verificar si el origen tiene stock suficiente
-  const inv = getInventario();
-  let faltantes = 0;
-  (t.items || []).forEach(it => {
-    const prod = inv.find(p => p.codigo === it.codigo);
-    if(!prod || (prod.stock || 0) < it.qty) faltantes++;
-  });
-
-  if(faltantes > 0){
-    html += `<div class="info-box error">
-      ⚠️ ${faltantes} producto(s) no tienen stock suficiente en el sistema.
-      Puedes procesar la transferencia de todas formas (se ajustará el stock).
-    </div>`;
-  }
-
-  html += `<div class="btn-row" style="margin-top:14px">
-    <button class="btn btn-ghost" onclick="openPanel('transferencias')">Volver</button>
-    <button class="btn btn-blue" onclick="procesarTransferencia('${t.id}')">✓ Marcar como recibida</button>
-  </div>`;
-
+  html += `<div class="btn-row" style="margin-top:14px"><button class="btn btn-ghost" onclick="openPanel('transferencias')">Volver</button><button class="btn btn-blue" onclick="procesarTransferencia('${t.id}')">✓ Recibida</button></div>`;
   document.getElementById('detalleTransferenciaCont').innerHTML = html;
 }
-
 function procesarTransferencia(id){
   const tareas = getTareas();
   const t = tareas.find(x => x.id === id);
   if(!t) return;
-
   t.estado = 'completada';
   t.fechaCompletada = new Date().toISOString();
   t.completadaPor = SESION.user;
   setTareas(tareas);
-
-  // Registrar en movimientos
   const movs = getMovimientos();
-  movs.push({
-    id: 'MOV-' + Date.now(),
-    tipo: 'transferencia',
-    refId: t.id,
-    origen: t.origen,
-    destino: t.destino,
-    conductor: t.conductor,
-    items: t.items,
-    usuario: SESION.user,
-    fecha: new Date().toISOString()
-  });
+  movs.push({ id: 'MOV-' + Date.now(), tipo:'transferencia', refId: t.id, origen: t.origen, destino: t.destino, conductor: t.conductor, items: t.items, usuario: SESION.user, fecha: new Date().toISOString() });
   setMovimientos(movs);
-
-  toast(`✅ Transferencia ${id} recibida · queda en historial`, 'success');
+  toast(`✓ ${id} recibida`, 'success');
   openPanel('transferencias');
 }
 
-/* ============================================================
-   DETALLE TAREA (solo lectura)
-   ============================================================ */
+/* ============ DETALLE TAREA ============ */
 function verDetalleTarea(id){
-  const tarea = getTareas().find(t => t.id === id);
-  if(!tarea) return toast('Tarea no encontrada','error');
+  const t = getTareas().find(x => x.id === id);
+  if(!t) return;
   openPanel('detalleTarea');
-  window._tareaVer = id;
-
-  const prio = tarea.tipoEntrega === 'inmediata' ? 1 : 3;
-  const prioCls = 'prio-' + prio;
-  const prioLbl = prio === 1 ? '⚡ Inmediata' : '📅 Posterior';
-
-  let html = `
-    <h2><span class="icon">🚀</span> ${escapeHtml(tarea.id)}</h2>
-    <p class="help"><span class="tc-badge ${prioCls}">${prioLbl}</span></p>
+  const prioCls = t.tipoEntrega === 'inmediata' ? 'prio-1' : 'prio-3';
+  let html = `<h2><span class="icon">🚀</span> ${escapeHtml(t.id)}</h2>
+    <p class="help"><span class="tc-badge ${prioCls}">${t.tipoEntrega === 'inmediata' ? '⚡ Inmediata' : '📅 Posterior'}</span></p>
     <div class="info-box">
-      ${tarea.empresa ? `<strong>Cliente:</strong> ${escapeHtml(tarea.empresa)}<br>` : ''}
-      ${tarea.rut ? `<strong>RUT:</strong> ${escapeHtml(tarea.rut)}<br>` : ''}
-      ${tarea.numBoleta ? `<strong>Boleta:</strong> ${escapeHtml(tarea.numBoleta)}<br>` : ''}
-      ${tarea.numFactura ? `<strong>Factura:</strong> ${escapeHtml(tarea.numFactura)}<br>` : ''}
-      ${tarea.numOut ? `<strong>OUT:</strong> ${escapeHtml(tarea.numOut)}<br>` : ''}
-      ${tarea.numSO ? `<strong>SO:</strong> ${escapeHtml(tarea.numSO)}<br>` : ''}
-      <strong>Usuario:</strong> ${escapeHtml(tarea.usuario || '—')}
+      ${t.empresa ? `<strong>Cliente:</strong> ${escapeHtml(t.empresa)}<br>` : ''}
+      ${t.rut ? `<strong>RUT:</strong> ${escapeHtml(t.rut)}<br>` : ''}
+      ${t.numBoleta ? `<strong>Boleta:</strong> ${escapeHtml(t.numBoleta)}<br>` : ''}
+      ${t.numFactura ? `<strong>Factura:</strong> ${escapeHtml(t.numFactura)}<br>` : ''}
+      ${t.numOut ? `<strong>OUT:</strong> ${escapeHtml(t.numOut)}<br>` : ''}
+      ${t.numSO ? `<strong>SO:</strong> ${escapeHtml(t.numSO)}<br>` : ''}
+      <strong>Usuario:</strong> ${escapeHtml(t.usuario||'—')}
     </div>
-    <h3 style="font-size:.75rem;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin:16px 0 8px">Ítems</h3>
-  `;
-
-  (tarea.items || []).forEach((it, i) => {
-    const completo = it.estado === 'completado';
-    const clase = completo ? 'completado' : (!it.ubicacionAsignada ? 'falta' : '');
-    html += `<div class="ruta-step ${clase}">
-      <div class="rs-num">${completo ? '✓' : (i+1)}</div>
-      <div class="rs-info">
-        <div class="rs-ubi">${it.ubicacionAsignada ? escapeHtml(it.ubicacionAsignada) : '⚠️ Sin ubicación'}</div>
-        <div class="rs-prod">${escapeHtml(it.codigo)} · ${escapeHtml(it.desc)}</div>
-      </div>
-      <div class="rs-qty">x${it.qty}</div>
-    </div>`;
+    <h3 style="font-size:.75rem;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin:16px 0 8px">Ítems</h3>`;
+  (t.items||[]).forEach((it, i) => {
+    const comp = it.estado === 'completado';
+    html += `<div class="ruta-step ${comp ? 'completado' : ''}"><div class="rs-num">${comp ? '✓' : (i+1)}</div><div class="rs-info"><div class="rs-ubi">${it.ubicacionAsignada ? escapeHtml(it.ubicacionAsignada) : '⚠️ Sin ubicación'}</div><div class="rs-prod">${escapeHtml(it.codigo)} · ${escapeHtml(it.desc)}</div></div><div class="rs-qty">x${it.qty}</div></div>`;
   });
-
-  html += `<div class="btn-row" style="margin-top:14px">
-    <button class="btn btn-ghost" onclick="openPanel('tareas')">Volver</button>
-    <button class="btn btn-primary" onclick="iniciarPickingFlow('${tarea.id}')">▶️ Comenzar Picking</button>
-  </div>`;
-
+  html += `<div class="btn-row" style="margin-top:14px"><button class="btn btn-ghost" onclick="openPanel('tareas')">Volver</button><button class="btn btn-primary" onclick="iniciarPickingFlow('${t.id}')">▶️ Picking</button></div>`;
   document.getElementById('detalleTareaCont').innerHTML = html;
 }
 
-/* ============================================================
-   FLUJO PICKING
-   ============================================================ */
-let flow = {
-  tipo: 'picking', tareaId: null, itemIdx: null,
-  paso: 'ubicacion', ubicacionEscaneada: null,
-  contenedorSugerido: null, contenedorEscaneado: null, errorMsg: null
-};
-
-function iniciarPickingFlow(tareaId){
+/* ============ FLUJO PICKING ============ */
+let flow = { tareaId:null, itemIdx:null, paso:'ubicacion', ubicacionEscaneada:null, contenedorSugerido:null, contenedorEscaneado:null, errorMsg:null };
+function iniciarPickingFlow(id){
   const tareas = getTareas();
-  const t = tareas.find(x => x.id === tareaId);
-  if(!t) return toast('Tarea no encontrada','error');
-
+  const t = tareas.find(x => x.id === id);
+  if(!t) return;
   const idx = t.items.findIndex(i => i.estado !== 'completado');
-  if(idx === -1) return toast('Esta tarea ya está completa','info');
-
-  if(t.estado === 'pendiente'){
-    t.estado = 'en_proceso';
-    t.asignadoA = SESION.user;
-    setTareas(tareas);
-  }
-
-  flow = { tipo:'picking', tareaId, itemIdx: idx, paso:'ubicacion', ubicacionEscaneada:null, contenedorSugerido:null, contenedorEscaneado:null, errorMsg:null };
+  if(idx === -1) return toast('Tarea ya completa','info');
+  if(t.estado === 'pendiente'){ t.estado = 'en_proceso'; t.asignadoA = SESION.user; setTareas(tareas); }
+  flow = { tareaId:id, itemIdx:idx, paso:'ubicacion', ubicacionEscaneada:null, contenedorSugerido:null, contenedorEscaneado:null, errorMsg:null };
   openPanel('pickingFlow');
   renderPickingFlow();
 }
-
 function renderPickingFlow(){
   const cont = document.getElementById('pickingFlowCont');
-  const tareas = getTareas();
-  const t = tareas.find(x => x.id === flow.tareaId);
-  if(!t){ cont.innerHTML = '<div class="info-box error">Tarea perdida</div>'; return; }
-
+  const t = getTareas().find(x => x.id === flow.tareaId);
+  if(!t) return cont.innerHTML = '<div class="info-box error">Tarea perdida</div>';
   const item = t.items[flow.itemIdx];
-  const completados = t.items.filter(i => i.estado === 'completado').length;
-  const total = t.items.length;
-  const pct = Math.round((completados / total) * 100);
-
+  const comp = t.items.filter(i => i.estado === 'completado').length;
+  const pct = Math.round(comp / t.items.length * 100);
   if(flow.paso === 'contenedor' && flow.contenedorSugerido === null){
-    const conts = getContenedores().filter(c =>
-      c.producto === item.codigo && c.ubicacion === item.ubicacionAsignada && c.cantidad > 0
-    );
-    flow.contenedorSugerido = conts.length > 0 ? conts[0].codigo : '';
+    const c = getContenedores().filter(x => x.producto === item.codigo && x.ubicacion === item.ubicacionAsignada && x.cantidad > 0);
+    flow.contenedorSugerido = c.length > 0 ? c[0].codigo : '';
   }
-
-  let html = `
-    <div class="flow-header">
-      <div>
-        <div class="flow-tarea-id">${escapeHtml(t.id)}</div>
-        <div class="flow-tarea-sub">${completados}/${total} ítems · ${pct}%</div>
-      </div>
-      <button class="btn btn-ghost btn-sm" onclick="salirPickingFlow()">Salir</button>
-    </div>
+  let html = `<div class="flow-header"><div><div class="flow-tarea-id">${escapeHtml(t.id)}</div><div class="flow-tarea-sub">${comp}/${t.items.length} · ${pct}%</div></div><button class="btn btn-ghost btn-sm" onclick="salirPickingFlow()">Salir</button></div>
     <div class="progress-bar"><div class="progress-fill" style="width:${pct}%"></div></div>
-
-    <div class="flow-product">
-      <div class="fp-code">${escapeHtml(item.codigo)}</div>
-      <div class="fp-desc">${escapeHtml(item.desc)}</div>
-      <div class="fp-qty">x${item.qty}</div>
-    </div>
-  `;
-
+    <div class="flow-product"><div class="fp-code">${escapeHtml(item.codigo)}</div><div class="fp-desc">${escapeHtml(item.desc)}</div><div class="fp-qty">x${item.qty}</div></div>`;
   if(flow.paso === 'ubicacion'){
-    html += `
-      <div class="flow-step"><div class="fs-num">1</div><div class="fs-title">Ve a la ubicación y escanéala</div></div>
-      <div class="flow-ubicacion">
-        <div class="fu-label">Ubicación asignada</div>
-        <div class="fu-code">${escapeHtml(item.ubicacionAsignada || 'SIN ASIGNAR')}</div>
-      </div>
+    html += `<div class="flow-step"><div class="fs-num">1</div><div class="fs-title">Escanea la ubicación</div></div>
+      <div class="flow-ubicacion"><div class="fu-label">Ubicación asignada</div><div class="fu-code">${escapeHtml(item.ubicacionAsignada || 'SIN ASIGNAR')}</div></div>
       ${flow.errorMsg ? `<div class="flow-error">${escapeHtml(flow.errorMsg)}</div>` : ''}
-      <div class="flow-input-wrap">
-        <input type="text" id="flowUbi" placeholder="Escanea la ubicación" autocomplete="off" onkeydown="if(event.key==='Enter'){event.preventDefault();escanearUbicacionFlow()}">
-        <div class="flow-hint">Escanea con la pistola. Se avanzará al coincidir.</div>
-      </div>
-      <button class="btn btn-primary" onclick="escanearUbicacionFlow()">Continuar →</button>
-    `;
+      <div class="flow-input-wrap"><input type="text" id="flowUbi" placeholder="Escanea ubicación" onkeydown="if(event.key==='Enter'){event.preventDefault();escanearUbicacionFlow()}"><div class="flow-hint">Avanza al coincidir.</div></div>
+      <button class="btn btn-primary" onclick="escanearUbicacionFlow()">Continuar →</button>`;
     setTimeout(() => document.getElementById('flowUbi')?.focus(), 120);
-  }
-  else if(flow.paso === 'contenedor'){
-    if(!flow.contenedorSugerido){
-      flow.paso = 'cantidad';
-      renderPickingFlow();
-      return;
-    }
-    html += `
-      <div class="flow-step"><div class="fs-num done">✓</div><div class="fs-title">Ubicación confirmada</div></div>
-      <div class="flow-step"><div class="fs-num">2</div><div class="fs-title">Verifica el contenedor</div></div>
+  } else if(flow.paso === 'contenedor'){
+    if(!flow.contenedorSugerido){ flow.paso = 'cantidad'; renderPickingFlow(); return; }
+    html += `<div class="flow-step"><div class="fs-num done">✓</div><div class="fs-title">Ubicación ✓</div></div>
+      <div class="flow-step"><div class="fs-num">2</div><div class="fs-title">Contenedor</div></div>
       ${flow.errorMsg ? `<div class="flow-error">${escapeHtml(flow.errorMsg)}</div>` : ''}
-      <div class="flow-input-wrap">
-        <input type="text" id="flowCont" placeholder="Escanea el contenedor" autocomplete="off" onkeydown="if(event.key==='Enter'){event.preventDefault();escanearContenedorFlow()}">
-        <div class="flow-hint">Contenedor esperado: <strong>${escapeHtml(flow.contenedorSugerido)}</strong></div>
-      </div>
-      <button class="btn btn-primary" onclick="escanearContenedorFlow()">Continuar →</button>
-    `;
+      <div class="flow-input-wrap"><input type="text" id="flowCont" placeholder="Escanea contenedor" onkeydown="if(event.key==='Enter'){event.preventDefault();escanearContenedorFlow()}"><div class="flow-hint">Esperado: <strong>${escapeHtml(flow.contenedorSugerido)}</strong></div></div>
+      <button class="btn btn-primary" onclick="escanearContenedorFlow()">Continuar →</button>`;
     setTimeout(() => document.getElementById('flowCont')?.focus(), 120);
-  }
-  else if(flow.paso === 'cantidad'){
-    html += `
-      <div class="flow-step"><div class="fs-num done">✓</div><div class="fs-title">Ubicación confirmada</div></div>
-      <div class="flow-step"><div class="fs-num done">✓</div><div class="fs-title">Contenedor verificado</div></div>
-      <div class="flow-step"><div class="fs-num">3</div><div class="fs-title">¿Cuántas unidades sacas?</div></div>
-      <div class="flow-cant-wrap">
-        <div class="fc-label">Cantidad pedida: <strong>${item.qty}</strong></div>
-        <input type="number" id="flowCant" value="${item.qty}" min="1" onkeydown="if(event.key==='Enter'){event.preventDefault();confirmarCantidadFlow()}">
-      </div>
-      <button class="btn btn-success" onclick="confirmarCantidadFlow()">✓ Confirmar y siguiente</button>
-    `;
+  } else if(flow.paso === 'cantidad'){
+    html += `<div class="flow-step"><div class="fs-num done">✓</div><div class="fs-title">Ubicación ✓</div></div>
+      <div class="flow-step"><div class="fs-num done">✓</div><div class="fs-title">Contenedor ✓</div></div>
+      <div class="flow-step"><div class="fs-num">3</div><div class="fs-title">¿Cuántas sacas?</div></div>
+      <div class="flow-cant-wrap"><div class="fc-label">Pedido: <strong>${item.qty}</strong></div><input type="number" id="flowCant" value="${item.qty}" min="1" onkeydown="if(event.key==='Enter'){event.preventDefault();confirmarCantidadFlow()}"></div>
+      <button class="btn btn-success" onclick="confirmarCantidadFlow()">✓ Confirmar</button>`;
     setTimeout(() => document.getElementById('flowCant')?.focus(), 120);
   }
-
   cont.innerHTML = html;
 }
-
 function escanearUbicacionFlow(){
   const v = document.getElementById('flowUbi').value.trim().toUpperCase();
-  const tareas = getTareas();
-  const t = tareas.find(x => x.id === flow.tareaId);
+  const t = getTareas().find(x => x.id === flow.tareaId);
   const item = t.items[flow.itemIdx];
-  const esperada = (item.ubicacionAsignada || '').toUpperCase();
-
-  if(v !== esperada){
-    flow.errorMsg = `Ubicación no coincide. Esperada: ${esperada}`;
-    renderPickingFlow();
-    toast('Ubicación no coincide','error');
-    return;
-  }
-
-  flow.errorMsg = null;
-  flow.ubicacionEscaneada = esperada;
-  flow.contenedorSugerido = null;
-  flow.paso = 'contenedor';
-  renderPickingFlow();
+  const esp = (item.ubicacionAsignada || '').toUpperCase();
+  if(v !== esp){ flow.errorMsg = `No coincide. Esperada: ${esp}`; renderPickingFlow(); toast('No coincide','error'); return; }
+  flow.errorMsg = null; flow.ubicacionEscaneada = esp; flow.contenedorSugerido = null; flow.paso = 'contenedor'; renderPickingFlow();
 }
-
 function escanearContenedorFlow(){
   const v = document.getElementById('flowCont').value.trim().toUpperCase();
-  const esperado = (flow.contenedorSugerido || '').toUpperCase();
-
-  if(v !== esperado){
-    flow.errorMsg = `Contenedor no coincide. Esperado: ${esperado}`;
-    renderPickingFlow();
-    toast('Contenedor no coincide','error');
-    return;
-  }
-
-  flow.errorMsg = null;
-  flow.contenedorEscaneado = esperado;
-  flow.paso = 'cantidad';
-  renderPickingFlow();
+  const esp = (flow.contenedorSugerido || '').toUpperCase();
+  if(v !== esp){ flow.errorMsg = `No coincide. Esperado: ${esp}`; renderPickingFlow(); toast('No coincide','error'); return; }
+  flow.errorMsg = null; flow.contenedorEscaneado = esp; flow.paso = 'cantidad'; renderPickingFlow();
 }
-
 function confirmarCantidadFlow(){
   const cant = parseInt(document.getElementById('flowCant').value) || 0;
   if(cant <= 0) return toast('Cantidad inválida','error');
-
   const tareas = getTareas();
   const t = tareas.find(x => x.id === flow.tareaId);
   const item = t.items[flow.itemIdx];
-
   const conts = getContenedores();
-  let porSacar = cant, descontadoTotal = 0;
+  let por = cant, desc = 0;
   for(const c of conts){
-    if(porSacar <= 0) break;
+    if(por <= 0) break;
     if(c.producto === item.codigo && c.ubicacion === flow.ubicacionEscaneada && c.cantidad > 0){
-      const sacar = Math.min(c.cantidad, porSacar);
-      c.cantidad -= sacar;
-      porSacar -= sacar;
-      descontadoTotal += sacar;
+      const s = Math.min(c.cantidad, por); c.cantidad -= s; por -= s; desc += s;
     }
   }
   setContenedores(conts);
-
-  if(porSacar > 0){
+  if(por > 0){
     const conteos = getConteos();
     for(const co of conteos){
-      if(porSacar <= 0) break;
+      if(por <= 0) break;
       if(co.codigo === item.codigo && co.ubicacion === flow.ubicacionEscaneada && co.cantidad > 0){
-        const sacar = Math.min(co.cantidad, porSacar);
-        co.cantidad -= sacar;
-        porSacar -= sacar;
-        descontadoTotal += sacar;
+        const s = Math.min(co.cantidad, por); co.cantidad -= s; por -= s; desc += s;
       }
     }
     setConteos(conteos);
   }
-
   const inv = getInventario();
   const prod = inv.find(p => p.codigo === item.codigo);
-  if(prod){
-    prod.stock = Math.max(0, (prod.stock || 0) - descontadoTotal);
-    setInventario(inv);
+  if(prod){ prod.stock = Math.max(0, (prod.stock || 0) - desc); setInventario(inv); }
+  item.estado = 'completado'; item.cantidadSacada = desc; item.fechaCompletado = new Date().toISOString();
+  const sig = t.items.findIndex((it, i) => i !== flow.itemIdx && it.estado !== 'completado');
+  if(sig === -1){
+    t.estado = 'completada'; t.fechaCompletada = new Date().toISOString(); t.completadaPor = SESION.user;
+    setTareas(tareas); renderPickingTerminado(); return;
   }
-
-  item.estado = 'completado';
-  item.cantidadSacada = descontadoTotal;
-  item.fechaCompletado = new Date().toISOString();
-
-  const siguienteIdx = t.items.findIndex((it, idx) => idx !== flow.itemIdx && it.estado !== 'completado');
-  if(siguienteIdx === -1){
-    t.estado = 'completada';
-    t.fechaCompletada = new Date().toISOString();
-    t.completadaPor = SESION.user;
-    setTareas(tareas);
-    renderPantallaTerminada();
-    return;
-  }
-
   setTareas(tareas);
-
-  flow.itemIdx = siguienteIdx;
-  flow.paso = 'ubicacion';
-  flow.ubicacionEscaneada = null;
-  flow.contenedorSugerido = null;
-  flow.contenedorEscaneado = null;
-  flow.errorMsg = null;
+  flow.itemIdx = sig; flow.paso = 'ubicacion'; flow.ubicacionEscaneada = null; flow.contenedorSugerido = null; flow.errorMsg = null;
   renderPickingFlow();
-
-  toast(`✓ ${item.codigo} listo · siguiente ítem`, 'success');
+  toast(`✓ ${item.codigo} · siguiente`, 'success');
 }
-
-function renderPantallaTerminada(){
+function renderPickingTerminado(){
   const cont = document.getElementById('pickingFlowCont');
-  const tareas = getTareas();
-  const t = tareas.find(x => x.id === flow.tareaId);
-  const pendientes = getTareasOrdenadas();
-
-  cont.innerHTML = `
-    <div style="text-align:center;padding:30px 10px">
-      <div style="font-size:64px;margin-bottom:16px">✅</div>
-      <h2 style="font-size:1.25rem;margin-bottom:6px">¡Tarea completada!</h2>
-      <p style="color:var(--muted);font-size:.88rem;margin-bottom:4px">${escapeHtml(t.id)}</p>
-      <p style="color:var(--muted);font-size:.75rem;margin-bottom:24px">${t.items.length} ítems · ${new Date().toLocaleString('es-CL')}</p>
-      <div class="btn-row">
-        <button class="btn btn-ghost" onclick="salirPickingFlow()">Salir</button>
-        ${pendientes.length > 0
-          ? `<button class="btn btn-primary" onclick="siguienteTareaFlow()">Siguiente tarea →</button>`
-          : `<button class="btn btn-primary" onclick="openPanel('tareas')">Ver tareas</button>`}
-      </div>
-    </div>
-  `;
+  const t = getTareas().find(x => x.id === flow.tareaId);
+  const pend = getTareasOrdenadas();
+  cont.innerHTML = `<div style="text-align:center;padding:30px 10px">
+    <div style="font-size:64px;margin-bottom:16px">✅</div>
+    <h2 style="font-size:1.25rem;margin-bottom:6px">¡Tarea completada!</h2>
+    <p style="color:var(--muted);font-size:.88rem;margin-bottom:4px">${escapeHtml(t.id)}</p>
+    <p style="color:var(--muted);font-size:.75rem;margin-bottom:24px">${t.items.length} ítems · ${new Date().toLocaleString('es-CL')}</p>
+    <div class="btn-row"><button class="btn btn-ghost" onclick="salirPickingFlow()">Salir</button>
+    ${pend.length > 0 ? `<button class="btn btn-primary" onclick="siguienteTareaFlow()">Siguiente →</button>` : `<button class="btn btn-primary" onclick="openPanel('tareas')">Ver tareas</button>`}</div>
+  </div>`;
 }
-
 function siguienteTareaFlow(){
-  const pendientes = getTareasOrdenadas();
-  if(pendientes.length === 0){ openPanel('tareas'); return; }
-  const sig = pendientes[0];
-  if(sig._esRecepcion) iniciarAlmacenarFlow(sig.id);
-  else if(sig.tipo === 'transferencia') verDetalleTransferencia(sig.id);
-  else iniciarPickingFlow(sig.id);
+  const pend = getTareasOrdenadas();
+  if(pend.length === 0) return openPanel('tareas');
+  const s = pend[0];
+  if(s._esRecepcion) iniciarAlmacenarFlow(s.id);
+  else if(s.tipo === 'transferencia') verDetalleTransferencia(s.id);
+  else iniciarPickingFlow(s.id);
 }
+function salirPickingFlow(){ flow = { tareaId:null, itemIdx:null, paso:'ubicacion', ubicacionEscaneada:null, contenedorSugerido:null, contenedorEscaneado:null, errorMsg:null }; openPanel('tareas'); }
 
-function salirPickingFlow(){
-  flow = { tipo:null, tareaId:null, itemIdx:null, paso:'ubicacion', ubicacionEscaneada:null, contenedorSugerido:null, contenedorEscaneado:null, errorMsg:null };
-  openPanel('tareas');
-}
-
-/* ============================================================
-   FLUJO ALMACENAR
-   ============================================================ */
-let flowAlm = { recId: null, itemIdx: null, paso: 'ubicacion', ubicacion: null, tipo: null, errorMsg: null };
-
-function iniciarAlmacenarFlow(recId){
+/* ============ FLUJO ALMACENAR ============ */
+let flowAlm = { recId:null, itemIdx:null, paso:'ubicacion', ubicacion:null, tipo:null, errorMsg:null };
+function iniciarAlmacenarFlow(id){
   const recs = getRecepciones();
-  const r = recs.find(x => x.id === recId);
-  if(!r) return toast('Recepción no encontrada','error');
-
+  const r = recs.find(x => x.id === id);
+  if(!r) return;
   const idx = r.items.findIndex(i => i.estado !== 'almacenado');
-  if(idx === -1) return toast('Esta recepción ya está completa','info');
-
-  flowAlm = { recId, itemIdx: idx, paso:'ubicacion', ubicacion:null, tipo:null, errorMsg:null };
+  if(idx === -1) return toast('Ya completa','info');
+  flowAlm = { recId:id, itemIdx:idx, paso:'ubicacion', ubicacion:null, tipo:null, errorMsg:null };
   openPanel('almacenarFlow');
   renderAlmacenarFlow();
 }
-
 function renderAlmacenarFlow(){
   const cont = document.getElementById('almacenarFlowCont');
-  const recs = getRecepciones();
-  const r = recs.find(x => x.id === flowAlm.recId);
-  if(!r){ cont.innerHTML = '<div class="info-box error">Recepción perdida</div>'; return; }
-
+  const r = getRecepciones().find(x => x.id === flowAlm.recId);
+  if(!r) return cont.innerHTML = '<div class="info-box error">Recepción perdida</div>';
   const item = r.items[flowAlm.itemIdx];
-  const completados = r.items.filter(i => i.estado === 'almacenado').length;
-  const total = r.items.length;
-  const pct = Math.round((completados / total) * 100);
-
-  let html = `
-    <div class="flow-header">
-      <div>
-        <div class="flow-tarea-id">${escapeHtml(r.id)}</div>
-        <div class="flow-tarea-sub">${completados}/${total} · ${pct}%</div>
-      </div>
-      <button class="btn btn-ghost btn-sm" onclick="salirAlmacenarFlow()">Salir</button>
-    </div>
+  const comp = r.items.filter(i => i.estado === 'almacenado').length;
+  const pct = Math.round(comp / r.items.length * 100);
+  let html = `<div class="flow-header"><div><div class="flow-tarea-id">${escapeHtml(r.id)}</div><div class="flow-tarea-sub">${comp}/${r.items.length} · ${pct}%</div></div><button class="btn btn-ghost btn-sm" onclick="salirAlmacenarFlow()">Salir</button></div>
     <div class="progress-bar"><div class="progress-fill" style="width:${pct}%"></div></div>
-
-    <div class="flow-product">
-      <div class="fp-code">${escapeHtml(item.codigo)}</div>
-      <div class="fp-desc">${escapeHtml(item.desc || '—')}</div>
-      <div class="fp-qty">x${item.qty}</div>
-    </div>
-  `;
-
+    <div class="flow-product"><div class="fp-code">${escapeHtml(item.codigo)}</div><div class="fp-desc">${escapeHtml(item.desc||'—')}</div><div class="fp-qty">x${item.qty}</div></div>`;
   if(flowAlm.paso === 'ubicacion'){
-    html += `
-      <div class="flow-step"><div class="fs-num">1</div><div class="fs-title">¿Dónde lo vas a guardar?</div></div>
-      ${flowAlm.errorMsg ? `<div class="flow-error">${escapeHtml(flowAlm.errorMsg)}</div>` : ''}
-      <div class="flow-input-wrap">
-        <input type="text" id="almUbi" placeholder="P1-A-R01-N01" autocomplete="off" onkeydown="if(event.key==='Enter'){event.preventDefault();escanearUbiAlmacenar()}">
-        <div class="flow-hint">Escanea o escribe la ubicación destino</div>
-      </div>
-      <button class="btn btn-primary" onclick="escanearUbiAlmacenar()">Confirmar →</button>
-    `;
+    html += `<div class="flow-step"><div class="fs-num">1</div><div class="fs-title">¿Dónde lo guardas?</div></div>
+      <div class="flow-input-wrap"><input type="text" id="almUbi" placeholder="P1-A-R01-N01" onkeydown="if(event.key==='Enter'){event.preventDefault();escanearUbiAlmacenar()}"><div class="flow-hint">Escanea o escribe la ubicación</div></div>
+      <button class="btn btn-primary" onclick="escanearUbiAlmacenar()">Confirmar →</button>`;
     setTimeout(() => document.getElementById('almUbi')?.focus(), 120);
-  }
-  else if(flowAlm.paso === 'tipo'){
-    html += `
-      <div class="flow-step"><div class="fs-num done">✓</div><div class="fs-title">Ubicación: ${escapeHtml(flowAlm.ubicacion)}</div></div>
+  } else if(flowAlm.paso === 'tipo'){
+    html += `<div class="flow-step"><div class="fs-num done">✓</div><div class="fs-title">Ubicación: ${escapeHtml(flowAlm.ubicacion)}</div></div>
       <div class="flow-step"><div class="fs-num">2</div><div class="fs-title">Tipo de contenedor</div></div>
       <div class="tipo-grid">
-        <button class="tipo-btn" data-tipo="Fijo" onclick="selTipoAlm(this)"><span class="ti-icon">🗄️</span><span class="ti-name">Fijo</span><span class="ti-desc">Estantería</span></button>
-        <button class="tipo-btn" data-tipo="Móvil" onclick="selTipoAlm(this)"><span class="ti-icon">📦</span><span class="ti-name">Móvil</span><span class="ti-desc">Caja reposición</span></button>
-        <button class="tipo-btn" data-tipo="Desechable" onclick="selTipoAlm(this)"><span class="ti-icon">🛍️</span><span class="ti-name">Desechable</span><span class="ti-desc">Bolsa</span></button>
-        <button class="tipo-btn" data-tipo="Caja" onclick="selTipoAlm(this)"><span class="ti-icon">📫</span><span class="ti-name">Caja</span><span class="ti-desc">Caja cerrada</span></button>
+        <button class="tipo-btn" data-tipo="Fijo" onclick="selTipoAlm(this)"><span class="ti-icon">🗄️</span><span class="ti-name">Fijo</span></button>
+        <button class="tipo-btn" data-tipo="Móvil" onclick="selTipoAlm(this)"><span class="ti-icon">📦</span><span class="ti-name">Móvil</span></button>
+        <button class="tipo-btn" data-tipo="Desechable" onclick="selTipoAlm(this)"><span class="ti-icon">🛍️</span><span class="ti-name">Desechable</span></button>
+        <button class="tipo-btn" data-tipo="Caja" onclick="selTipoAlm(this)"><span class="ti-icon">📫</span><span class="ti-name">Caja</span></button>
       </div>
-      <button class="btn btn-primary" style="margin-top:12px" onclick="confirmarTipoAlm()">Continuar →</button>
-    `;
-  }
-  else if(flowAlm.paso === 'cantidad'){
-    html += `
-      <div class="flow-step"><div class="fs-num done">✓</div><div class="fs-title">Ubicación: ${escapeHtml(flowAlm.ubicacion)}</div></div>
+      <button class="btn btn-primary" style="margin-top:12px" onclick="confirmarTipoAlm()">Continuar →</button>`;
+  } else if(flowAlm.paso === 'cantidad'){
+    html += `<div class="flow-step"><div class="fs-num done">✓</div><div class="fs-title">Ubicación: ${escapeHtml(flowAlm.ubicacion)}</div></div>
       <div class="flow-step"><div class="fs-num done">✓</div><div class="fs-title">Tipo: ${escapeHtml(flowAlm.tipo)}</div></div>
-      <div class="flow-step"><div class="fs-num">3</div><div class="fs-title">¿Cuántas unidades almacenas?</div></div>
-      <div class="flow-cant-wrap">
-        <div class="fc-label">Cantidad recibida: <strong>${item.qty}</strong></div>
-        <input type="number" id="almCant" value="${item.qty}" min="1" onkeydown="if(event.key==='Enter'){event.preventDefault();confirmarCantAlm()}">
-      </div>
-      <button class="btn btn-success" onclick="confirmarCantAlm()">✓ Confirmar y siguiente</button>
-    `;
+      <div class="flow-step"><div class="fs-num">3</div><div class="fs-title">¿Cuántas almacenas?</div></div>
+      <div class="flow-cant-wrap"><div class="fc-label">Recibido: <strong>${item.qty}</strong></div><input type="number" id="almCant" value="${item.qty}" min="1" onkeydown="if(event.key==='Enter'){event.preventDefault();confirmarCantAlm()}"></div>
+      <button class="btn btn-success" onclick="confirmarCantAlm()">✓ Confirmar</button>`;
     setTimeout(() => document.getElementById('almCant')?.focus(), 120);
   }
-
   cont.innerHTML = html;
 }
-
 function escanearUbiAlmacenar(){
   const v = document.getElementById('almUbi').value.trim().toUpperCase();
-  if(!v) return toast('Ingresa una ubicación','error');
-
+  if(!v) return toast('Ingresa ubicación','error');
   const ubis = getUbicaciones();
-  if(!ubis.find(u => u.codigo === v)){
-    ubis.push({
-      codigo: v, piso: v.split('-')[0] || 'P1', sector: v.split('-')[1] || 'A',
-      rack: v.split('-')[2] || 'RXX', nivel: v.split('-')[3] || 'NXX',
-      distancia: 10, ficticia: false
-    });
-    setUbicaciones(ubis);
-    toast(`📍 ${v} creada`, 'success');
-  }
-
-  flowAlm.ubicacion = v;
-  flowAlm.paso = 'tipo';
-  flowAlm.errorMsg = null;
-  renderAlmacenarFlow();
+  if(!ubis.find(u => u.codigo === v)){ ubis.push({ codigo:v, distancia:10, ficticia:false }); setUbicaciones(ubis); }
+  flowAlm.ubicacion = v; flowAlm.paso = 'tipo'; renderAlmacenarFlow();
 }
-
 function selTipoAlm(el){
   document.querySelectorAll('#almacenarFlowCont .tipo-btn').forEach(b => b.classList.remove('sel'));
   el.classList.add('sel');
   flowAlm.tipo = el.dataset.tipo;
 }
-
 function confirmarTipoAlm(){
-  if(!flowAlm.tipo) return toast('Elige un tipo','error');
+  if(!flowAlm.tipo) return toast('Elige tipo','error');
   flowAlm.paso = 'cantidad';
   renderAlmacenarFlow();
 }
-
 function confirmarCantAlm(){
   const cant = parseInt(document.getElementById('almCant').value) || 0;
-  if(cant <= 0) return toast('Cantidad inválida','error');
-
+  if(cant <= 0) return toast('Inválida','error');
   const recs = getRecepciones();
   const r = recs.find(x => x.id === flowAlm.recId);
   const item = r.items[flowAlm.itemIdx];
-
   const conts = getContenedores();
-  conts.push({
-    codigo: 'C' + Date.now().toString().slice(-6),
-    ubicacion: flowAlm.ubicacion, producto: item.codigo, desc: item.desc,
-    cantidad: cant, tipo: flowAlm.tipo,
-    fecha: new Date().toISOString(), usuario: SESION.user
-  });
+  conts.push({ codigo:'C'+Date.now().toString().slice(-6), ubicacion:flowAlm.ubicacion, producto:item.codigo, desc:item.desc, cantidad:cant, tipo:flowAlm.tipo, fecha:new Date().toISOString(), usuario:SESION.user });
   setContenedores(conts);
-
   const conteos = getConteos();
-  conteos.push({
-    codigo: item.codigo, desc: item.desc, cantidad: cant,
-    ubicacion: flowAlm.ubicacion, usuario: SESION.user,
-    fecha: new Date().toISOString()
-  });
+  conteos.push({ codigo:item.codigo, desc:item.desc, cantidad:cant, ubicacion:flowAlm.ubicacion, usuario:SESION.user, fecha:new Date().toISOString() });
   setConteos(conteos);
-
   const inv = getInventario();
   const prod = inv.find(p => p.codigo === item.codigo);
-  if(prod){ prod.stock = (prod.stock || 0) + cant; }
-  else { inv.push({ codigo: item.codigo, desc: item.desc, unidad: item.unidad || 'UN', stock: cant }); }
+  if(prod) prod.stock = (prod.stock || 0) + cant;
+  else inv.push({ codigo:item.codigo, desc:item.desc, unidad:item.unidad||'UN', stock:cant });
   setInventario(inv);
-
-  item.estado = 'almacenado';
-  item.ubicacion = flowAlm.ubicacion;
-  item.cantidadAlmacenada = cant;
-  item.fechaAlmacenado = new Date().toISOString();
-
-  const siguienteIdx = r.items.findIndex((it, idx) => idx !== flowAlm.itemIdx && it.estado !== 'almacenado');
-  if(siguienteIdx === -1){
-    r.estado = 'completada';
-    r.fechaCompletada = new Date().toISOString();
-    r.completadaPor = SESION.user;
-    setRecepciones(recs);
-    renderAlmacenarTerminado();
-    return;
+  item.estado = 'almacenado'; item.ubicacion = flowAlm.ubicacion; item.cantidadAlmacenada = cant;
+  const sig = r.items.findIndex((it, i) => i !== flowAlm.itemIdx && it.estado !== 'almacenado');
+  if(sig === -1){
+    r.estado = 'completada'; r.fechaCompletada = new Date().toISOString(); r.completadaPor = SESION.user;
+    setRecepciones(recs); renderAlmacenarTerminado(); return;
   }
-
   setRecepciones(recs);
-  flowAlm.itemIdx = siguienteIdx;
-  flowAlm.paso = 'ubicacion';
-  flowAlm.ubicacion = null;
-  flowAlm.tipo = null;
-  flowAlm.errorMsg = null;
+  flowAlm.itemIdx = sig; flowAlm.paso = 'ubicacion'; flowAlm.ubicacion = null; flowAlm.tipo = null;
   renderAlmacenarFlow();
-  toast(`✓ ${item.codigo} almacenado · siguiente`, 'success');
+  toast(`✓ ${item.codigo} · siguiente`,'success');
 }
-
 function renderAlmacenarTerminado(){
   const cont = document.getElementById('almacenarFlowCont');
-  const recs = getRecepciones();
-  const r = recs.find(x => x.id === flowAlm.recId);
-  const pendientes = getTareasOrdenadas();
-
-  cont.innerHTML = `
-    <div style="text-align:center;padding:30px 10px">
-      <div style="font-size:64px;margin-bottom:16px">✅</div>
-      <h2 style="font-size:1.25rem;margin-bottom:6px">¡Recepción almacenada!</h2>
-      <p style="color:var(--muted);font-size:.88rem;margin-bottom:4px">${escapeHtml(r.id)}</p>
-      <p style="color:var(--muted);font-size:.75rem;margin-bottom:24px">${r.items.length} productos · ${new Date().toLocaleString('es-CL')}</p>
-      <div class="btn-row">
-        <button class="btn btn-ghost" onclick="salirAlmacenarFlow()">Salir</button>
-        ${pendientes.length > 0
-          ? `<button class="btn btn-primary" onclick="siguienteTareaFlow()">Siguiente tarea →</button>`
-          : `<button class="btn btn-primary" onclick="openPanel('tareas')">Ver tareas</button>`}
-      </div>
-    </div>
-  `;
-}
-
-function salirAlmacenarFlow(){
-  flowAlm = { recId:null, itemIdx:null, paso:'ubicacion', ubicacion:null, tipo:null, errorMsg:null };
-  openPanel('tareas');
-}
-
-/* ============================================================
-   DETALLE RECEPCIÓN
-   ============================================================ */
-function verDetalleRecepcion(id){
-  const recs = getRecepciones();
-  const rec = recs.find(r => r.id === id);
-  if(!rec) return;
-  openPanel('detalleRecepcion');
-
-  let html = `
-    <h2><span class="icon">🚚</span> ${escapeHtml(rec.id)}</h2>
-    <div class="info-box purple">
-      <strong>Proveedor RUT:</strong> ${escapeHtml(rec.rut || '—')}<br>
-      <strong>Factura:</strong> ${escapeHtml(rec.numFactura || '—')}<br>
-      <strong>Fecha:</strong> ${escapeHtml(rec.fecha || '—')}<br>
-      <strong>Usuario:</strong> ${escapeHtml(rec.usuario || '—')}
-    </div>
-    <h3 style="font-size:.75rem;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin:16px 0 8px">Productos</h3>
-  `;
-
-  (rec.items || []).forEach((it, i) => {
-    const completo = it.estado === 'almacenado';
-    html += `<div class="ruta-step ${completo ? 'completado' : ''}">
-      <div class="rs-num">${completo ? '✓' : (i+1)}</div>
-      <div class="rs-info">
-        <div class="rs-ubi">${escapeHtml(it.codigo)}</div>
-        <div class="rs-prod">${escapeHtml(it.desc || '—')}${it.ubicacion ? ' · 📍 ' + escapeHtml(it.ubicacion) : ''}</div>
-      </div>
-      <div class="rs-qty">x${it.qty}</div>
-    </div>`;
-  });
-
-  html += `<div class="btn-row" style="margin-top:14px">
-    <button class="btn btn-ghost" onclick="openPanel('tareas')">Volver</button>
-    <button class="btn btn-primary" onclick="iniciarAlmacenarFlow('${rec.id}')">▶️ Comenzar a almacenar</button>
+  const r = getRecepciones().find(x => x.id === flowAlm.recId);
+  const pend = getTareasOrdenadas();
+  cont.innerHTML = `<div style="text-align:center;padding:30px 10px">
+    <div style="font-size:64px;margin-bottom:16px">✅</div>
+    <h2 style="font-size:1.25rem;margin-bottom:6px">¡Recepción almacenada!</h2>
+    <p style="color:var(--muted);font-size:.88rem;margin-bottom:4px">${escapeHtml(r.id)}</p>
+    <p style="color:var(--muted);font-size:.75rem;margin-bottom:24px">${r.items.length} productos</p>
+    <div class="btn-row"><button class="btn btn-ghost" onclick="salirAlmacenarFlow()">Salir</button>
+    ${pend.length > 0 ? `<button class="btn btn-primary" onclick="siguienteTareaFlow()">Siguiente →</button>` : `<button class="btn btn-primary" onclick="openPanel('tareas')">Ver tareas</button>`}</div>
   </div>`;
+}
+function salirAlmacenarFlow(){ flowAlm = { recId:null, itemIdx:null, paso:'ubicacion', ubicacion:null, tipo:null, errorMsg:null }; openPanel('tareas'); }
 
+/* ============ DETALLE RECEPCIÓN ============ */
+function verDetalleRecepcion(id){
+  const r = getRecepciones().find(x => x.id === id);
+  if(!r) return;
+  openPanel('detalleRecepcion');
+  let html = `<h2><span class="icon">🚚</span> ${escapeHtml(r.id)}</h2>
+    <div class="info-box purple"><strong>RUT:</strong> ${escapeHtml(r.rut||'—')}<br><strong>Factura:</strong> ${escapeHtml(r.numFactura||'—')}<br><strong>Usuario:</strong> ${escapeHtml(r.usuario||'—')}</div>
+    <h3 style="font-size:.75rem;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin:16px 0 8px">Productos</h3>`;
+  (r.items||[]).forEach((it, i) => {
+    const comp = it.estado === 'almacenado';
+    html += `<div class="ruta-step ${comp?'completado':''}"><div class="rs-num">${comp?'✓':(i+1)}</div><div class="rs-info"><div class="rs-ubi">${escapeHtml(it.codigo)}</div><div class="rs-prod">${escapeHtml(it.desc||'—')}${it.ubicacion?' · 📍 '+escapeHtml(it.ubicacion):''}</div></div><div class="rs-qty">x${it.qty}</div></div>`;
+  });
+  html += `<div class="btn-row" style="margin-top:14px"><button class="btn btn-ghost" onclick="openPanel('tareas')">Volver</button><button class="btn btn-primary" onclick="iniciarAlmacenarFlow('${r.id}')">▶️ Almacenar</button></div>`;
   document.getElementById('detalleRecepcionCont').innerHTML = html;
 }
 
-/* ============================================================
-   RECEPCIÓN FORM
-   ============================================================ */
+/* ============ RECEPCIÓN FORM ============ */
 let recItems = [];
-
 function initRecepcion(){
   document.getElementById('rFecha').value = new Date().toISOString().slice(0,10);
   document.getElementById('rRut').value = '';
@@ -1773,116 +1191,54 @@ function initRecepcion(){
   recItems = [{ codigo:'', desc:'', unidad:'UN', qty:1, nuevo:false }];
   renderRecItems();
 }
-
 function renderRecItems(){
   const cont = document.getElementById('rProdList');
   cont.innerHTML = recItems.map((it, i) => `
-    <div class="rec-row ${it.nuevo ? 'nuevo' : ''}">
+    <div class="rec-row ${it.nuevo?'nuevo':''}">
       <div class="rr-fields">
-        <div>
-          <div class="rr-label">Código</div>
-          <input type="text" placeholder="Código" value="${escapeAttr(it.codigo)}" onchange="cambiarCodRec(${i}, this.value)" style="text-transform:uppercase;width:100%">
-        </div>
-        <div>
-          <div class="rr-label">Descripción ${it.nuevo ? '· NUEVO' : ''}</div>
-          <input type="text" placeholder="Descripción" value="${escapeAttr(it.desc)}" ${it.nuevo ? '' : 'readonly'} onchange="recItems[${i}].desc = this.value" style="width:100%">
-        </div>
+        <div><div class="rr-label">Código</div><input type="text" value="${escapeAttr(it.codigo)}" onchange="cambiarCodRec(${i},this.value)" style="text-transform:uppercase;width:100%"></div>
+        <div><div class="rr-label">Descripción ${it.nuevo?'· NUEVO':''}</div><input type="text" value="${escapeAttr(it.desc)}" ${it.nuevo?'':'readonly'} onchange="recItems[${i}].desc=this.value" style="width:100%"></div>
       </div>
       <div style="display:grid;grid-template-columns:1fr 1fr 30px;gap:6px;align-items:end">
-        <div>
-          <div class="rr-label">Unidad</div>
-          <select ${it.nuevo ? '' : 'disabled'} onchange="recItems[${i}].unidad = this.value">
-            <option value="UN" ${it.unidad==='UN'?'selected':''}>Unidad</option>
-            <option value="CAJA" ${it.unidad==='CAJA'?'selected':''}>Caja</option>
-            <option value="BOLSA" ${it.unidad==='BOLSA'?'selected':''}>Bolsa</option>
-            <option value="M" ${it.unidad==='M'?'selected':''}>Metro</option>
-            <option value="KG" ${it.unidad==='KG'?'selected':''}>Kilo</option>
-            <option value="LT" ${it.unidad==='LT'?'selected':''}>Litro</option>
-          </select>
-        </div>
-        <div>
-          <div class="rr-label">Cantidad</div>
-          <input type="number" placeholder="Cant" value="${it.qty}" min="1" onchange="recItems[${i}].qty = parseInt(this.value)||1">
-        </div>
-        <button class="rr-del" onclick="recItems.splice(${i},1); renderRecItems()">✕</button>
+        <div><div class="rr-label">Unidad</div><select ${it.nuevo?'':'disabled'} onchange="recItems[${i}].unidad=this.value"><option value="UN" ${it.unidad==='UN'?'selected':''}>UN</option><option value="CAJA" ${it.unidad==='CAJA'?'selected':''}>CAJA</option><option value="M" ${it.unidad==='M'?'selected':''}>M</option><option value="KG" ${it.unidad==='KG'?'selected':''}>KG</option><option value="LT" ${it.unidad==='LT'?'selected':''}>LT</option></select></div>
+        <div><div class="rr-label">Cantidad</div><input type="number" value="${it.qty}" min="1" onchange="recItems[${i}].qty=parseInt(this.value)||1"></div>
+        <button class="rr-del" onclick="recItems.splice(${i},1);renderRecItems()">✕</button>
       </div>
-    </div>
-  `).join('');
+    </div>`).join('');
 }
-
 function cambiarCodRec(i, val){
   const cod = val.trim().toUpperCase();
   recItems[i].codigo = cod;
-  const inv = getInventario();
-  const ex = inv.find(p => p.codigo === cod);
-  if(ex){
-    recItems[i].desc = ex.desc;
-    recItems[i].unidad = ex.unidad || 'UN';
-    recItems[i].nuevo = false;
-  } else {
-    recItems[i].nuevo = true;
-  }
+  const ex = getInventario().find(p => p.codigo === cod);
+  if(ex){ recItems[i].desc = ex.desc; recItems[i].unidad = ex.unidad || 'UN'; recItems[i].nuevo = false; }
+  else recItems[i].nuevo = true;
   renderRecItems();
 }
-
-function addProdRecepcion(){
-  recItems.push({ codigo:'', desc:'', unidad:'UN', qty:1, nuevo:false });
-  renderRecItems();
-}
-
-function cancelarRecepcion(){
-  recItems = [];
-  initRecepcion();
-  openPanel('recepcion');
-}
-
+function addProdRecepcion(){ recItems.push({ codigo:'', desc:'', unidad:'UN', qty:1, nuevo:false }); renderRecItems(); }
+function cancelarRecepcion(){ recItems = []; initRecepcion(); openPanel('recepcion'); }
 function guardarRecepcion(){
   const rut = document.getElementById('rRut').value.trim();
-  const factura = document.getElementById('rFactura').value.trim();
+  const fac = document.getElementById('rFactura').value.trim();
   const fecha = document.getElementById('rFecha').value;
-  if(!rut && !factura) return toast('Ingresa RUT o N° factura','error');
-  const validos = recItems.filter(i => i.codigo && i.codigo.trim() && i.qty > 0);
-  if(validos.length === 0) return toast('Agrega al menos un producto','error');
-  for(const it of validos){
-    if(it.nuevo && !it.desc.trim()) return toast(`Falta descripción para ${it.codigo}`, 'error');
-  }
-
+  if(!rut && !fac) return toast('Ingresa RUT o factura','error');
+  const val = recItems.filter(i => i.codigo && i.qty > 0);
+  if(val.length === 0) return toast('Agrega productos','error');
+  for(const it of val){ if(it.nuevo && !it.desc.trim()) return toast(`Falta descripción ${it.codigo}`,'error'); }
   const inv = getInventario();
-  let creados = 0;
-  validos.forEach(it => {
-    if(!inv.find(p => p.codigo === it.codigo)){
-      inv.push({ codigo: it.codigo, desc: it.desc, unidad: it.unidad, stock: 0 });
-      creados++;
-    }
-  });
-  if(creados > 0) setInventario(inv);
-
+  let cr = 0;
+  val.forEach(it => { if(!inv.find(p => p.codigo === it.codigo)){ inv.push({ codigo:it.codigo, desc:it.desc, unidad:it.unidad, stock:0 }); cr++; } });
+  if(cr > 0) setInventario(inv);
   const recs = getRecepciones();
-  const num = recs.length + 1;
-  const id = 'REC-' + String(num).padStart(3,'0');
-
-  recs.push({
-    id, rut, numFactura: factura, fecha,
-    items: validos.map(i => ({
-      codigo: i.codigo, desc: i.desc, unidad: i.unidad, qty: i.qty,
-      estado: 'pendiente'
-    })),
-    usuario: SESION.user,
-    fechaCreacion: new Date().toISOString(),
-    estado: 'por_almacenar'
-  });
-
+  const id = 'REC-' + String(recs.length + 1).padStart(3,'0');
+  recs.push({ id, rut, numFactura:fac, fecha, items: val.map(i => ({ codigo:i.codigo, desc:i.desc, unidad:i.unidad, qty:i.qty, estado:'pendiente' })), usuario:SESION.user, fechaCreacion:new Date().toISOString(), estado:'por_almacenar' });
   setRecepciones(recs);
-  toast(`✅ ${id} guardada${creados > 0 ? ` · ${creados} productos creados` : ''}`, 'success');
+  toast(`✓ ${id}${cr > 0 ? ' · '+cr+' creados' : ''}`,'success');
   recItems = [];
   openPanel('tareas');
 }
 
-/* ============================================================
-   TOMAR INVENTARIO
-   ============================================================ */
-let tomaState = { rack: null, tipo: null, prod: null, conteos: [] };
-
+/* ============ TOMAR INVENTARIO ============ */
+let tomaState = { rack:null, tipo:null, prod:null, conteos:[] };
 function resetTomarInv(){
   tomaState = { rack:null, tipo:null, prod:null, conteos:[] };
   document.getElementById('tomarStep1').style.display = 'block';
@@ -1894,64 +1250,39 @@ function resetTomarInv(){
   document.getElementById('finalizarRow').style.display = 'none';
   document.querySelectorAll('.tipo-btn').forEach(b => b.classList.remove('sel'));
 }
-
 function confirmarRack(){
   const cod = document.getElementById('scanRack').value.trim().toUpperCase();
-  if(!cod) return toast('Escanea un rack','error');
+  if(!cod) return toast('Escanea rack','error');
   const ubis = getUbicaciones();
-  let ubi = ubis.find(u => u.codigo === cod);
-  if(!ubi){
-    ubi = {
-      codigo: cod, piso: cod.split('-')[0] || 'P1', sector: cod.split('-')[1] || 'A',
-      rack: cod.split('-')[2] || 'RXX', nivel: cod.split('-')[3] || 'NXX',
-      distancia: 10, ficticia: true
-    };
-    ubis.push(ubi);
-    setUbicaciones(ubis);
-    toast(`📍 ${cod} creada`, 'success');
-  }
+  if(!ubis.find(u => u.codigo === cod)){ ubis.push({ codigo:cod, distancia:10, ficticia:true }); setUbicaciones(ubis); }
   tomaState.rack = cod;
   document.getElementById('rackInfo').innerHTML = `📍 Rack: <strong>${cod}</strong>`;
   document.getElementById('tomarStep1').style.display = 'none';
   document.getElementById('tomarStep2').style.display = 'block';
   setTimeout(() => document.getElementById('scanProd').focus(), 200);
 }
-
 function selTipo(el){
   document.querySelectorAll('#tomarStep2 .tipo-btn').forEach(b => b.classList.remove('sel'));
   el.classList.add('sel');
   tomaState.tipo = el.dataset.tipo;
 }
-
 function confirmarProducto(){
   const cod = document.getElementById('scanProd').value.trim().toUpperCase();
-  if(!cod) return toast('Escanea un producto','error');
-  if(!tomaState.tipo) return toast('Elige tipo de contenedor','error');
-  const inv = getInventario();
-  const prod = inv.find(p => p.codigo === cod);
-  if(!prod){
-    document.getElementById('prodInfoBox').innerHTML = `<div class="info-box error">⚠️ ${escapeHtml(cod)} no está en el inventario</div>`;
-    return;
-  }
+  if(!cod) return toast('Escanea producto','error');
+  if(!tomaState.tipo) return toast('Elige tipo','error');
+  const prod = getInventario().find(p => p.codigo === cod);
+  if(!prod) return document.getElementById('prodInfoBox').innerHTML = `<div class="info-box error">⚠️ ${escapeHtml(cod)} no está en inventario</div>`;
   tomaState.prod = prod;
-  document.getElementById('prodInfoBox').innerHTML = `<div class="info-box success">
-    <strong>${escapeHtml(prod.codigo)}</strong><br>${escapeHtml(prod.desc)}<br>
-    <span style="font-size:.72rem">Stock sistema: ${prod.stock}</span>
-  </div>`;
+  document.getElementById('prodInfoBox').innerHTML = `<div class="info-box success"><strong>${escapeHtml(prod.codigo)}</strong><br>${escapeHtml(prod.desc)}<br><span style="font-size:.72rem">Stock: ${prod.stock}</span></div>`;
   document.getElementById('cantField').style.display = 'block';
   document.getElementById('accionesProducto').style.display = 'block';
   setTimeout(() => document.getElementById('prodCant').focus(), 100);
 }
-
 function agregarConteo(){
   const cant = parseInt(document.getElementById('prodCant').value) || 0;
-  if(cant <= 0) return toast('Ingresa cantidad','error');
+  if(cant <= 0) return toast('Inválido','error');
   if(!tomaState.prod) return;
-  tomaState.conteos.push({
-    codigo: tomaState.prod.codigo, desc: tomaState.prod.desc, cantidad: cant,
-    ubicacion: tomaState.rack, tipo: tomaState.tipo,
-    usuario: SESION.user, fecha: new Date().toISOString()
-  });
+  tomaState.conteos.push({ codigo:tomaState.prod.codigo, desc:tomaState.prod.desc, cantidad:cant, ubicacion:tomaState.rack, tipo:tomaState.tipo, usuario:SESION.user, fecha:new Date().toISOString() });
   document.getElementById('scanProd').value = '';
   document.getElementById('prodCant').value = '';
   document.getElementById('prodInfoBox').innerHTML = '';
@@ -1961,197 +1292,383 @@ function agregarConteo(){
   document.getElementById('finalizarRow').style.display = 'flex';
   setTimeout(() => document.getElementById('scanProd').focus(), 100);
 }
-
 function renderConteosToma(){
-  const cont = document.getElementById('conteosLista');
-  if(tomaState.conteos.length === 0){ cont.innerHTML = ''; return; }
-  cont.innerHTML = `<h3 style="font-size:.72rem;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px">Conteos (${tomaState.conteos.length})</h3>` +
-    tomaState.conteos.map(c => `
-      <div class="list-item">
-        <div class="li-info">
-          <div class="li-title">${escapeHtml(c.codigo)}</div>
-          <div class="li-sub">${escapeHtml(c.desc)} · ${c.tipo}</div>
-        </div>
-        <div class="li-qty">x${c.cantidad}</div>
-      </div>
-    `).join('');
+  const c = document.getElementById('conteosLista');
+  if(tomaState.conteos.length === 0) return c.innerHTML = '';
+  c.innerHTML = `<h3 style="font-size:.72rem;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px">Conteos (${tomaState.conteos.length})</h3>` +
+    tomaState.conteos.map(x => `<div class="list-item"><div class="li-info"><div class="li-title">${escapeHtml(x.codigo)}</div><div class="li-sub">${escapeHtml(x.desc)} · ${x.tipo}</div></div><div class="li-qty">x${x.cantidad}</div></div>`).join('');
 }
-
-function seguirTomando(){
-  guardarConteosSesion();
-  tomaState.rack = null; tomaState.tipo = null;
-  document.getElementById('tomarStep1').style.display = 'block';
-  document.getElementById('tomarStep2').style.display = 'none';
-  document.getElementById('scanRack').value = '';
-  document.getElementById('scanProd').value = '';
-  document.getElementById('prodInfoBox').innerHTML = '';
-  document.getElementById('conteosLista').innerHTML = '';
-  document.getElementById('finalizarRow').style.display = 'none';
-  document.querySelectorAll('.tipo-btn').forEach(b => b.classList.remove('sel'));
-  setTimeout(() => document.getElementById('scanRack').focus(), 100);
-  toast('Conteos guardados','success');
-}
-
-function finalizarToma(){
-  if(tomaState.conteos.length === 0) return toast('No hay conteos','error');
-  guardarConteosSesion();
-  toast('✅ Toma finalizada','success');
-  resetTomarInv();
-  openPanel('tareas');
-}
-
+function seguirTomando(){ guardarConteosSesion(); resetTomarInv(); toast('Guardado','success'); }
+function finalizarToma(){ if(tomaState.conteos.length === 0) return toast('Sin conteos','error'); guardarConteosSesion(); resetTomarInv(); openPanel('tareas'); }
 function guardarConteosSesion(){
   if(tomaState.conteos.length === 0) return;
   const conteos = getConteos();
   const conts = getContenedores();
   tomaState.conteos.forEach(c => {
     conteos.push(c);
-    conts.push({
-      codigo: 'C' + Date.now().toString().slice(-6) + Math.floor(Math.random()*100),
-      ubicacion: c.ubicacion, producto: c.codigo, desc: c.desc,
-      cantidad: c.cantidad, tipo: c.tipo, fecha: c.fecha, usuario: c.usuario
-    });
+    conts.push({ codigo:'C'+Date.now().toString().slice(-6)+Math.floor(Math.random()*100), ubicacion:c.ubicacion, producto:c.codigo, desc:c.desc, cantidad:c.cantidad, tipo:c.tipo, fecha:c.fecha, usuario:c.usuario });
   });
-  setConteos(conteos);
-  setContenedores(conts);
+  setConteos(conteos); setContenedores(conts);
   tomaState.conteos = [];
 }
 
-/* ============================================================
-   CAMBIAR UBICACIÓN
-   ============================================================ */
-function resetCambiarUbi(){
-  document.getElementById('cuProd').value = '';
-  document.getElementById('cuResultado').innerHTML = '';
-}
-
+/* ============ CAMBIAR UBICACIÓN ============ */
+function resetCambiarUbi(){ document.getElementById('cuProd').value = ''; document.getElementById('cuResultado').innerHTML = ''; }
 function buscarParaMover(){
   const cod = document.getElementById('cuProd').value.trim().toUpperCase();
-  if(!cod) return toast('Ingresa un código','error');
-  const inv = getInventario();
-  const prod = inv.find(p => p.codigo === cod);
-  if(!prod) return toast('Producto no encontrado','error');
-
+  if(!cod) return toast('Ingresa código','error');
+  const prod = getInventario().find(p => p.codigo === cod);
+  if(!prod) return toast('No encontrado','error');
   const conts = getContenedores().filter(c => c.producto === cod && c.cantidad > 0);
   const conteos = getConteos().filter(c => c.codigo === cod && c.cantidad > 0);
-
-  let html = `<div class="info-box">
-    <strong>${escapeHtml(prod.codigo)}</strong><br>${escapeHtml(prod.desc)}<br>
-    <span style="font-size:.72rem">Stock sistema: ${prod.stock}</span>
-  </div>`;
-
-  const ubicaciones = [];
-  conts.forEach(c => {
-    const u = ubicaciones.find(x => x.codigo === c.ubicacion);
-    if(u) u.cantidad += c.cantidad;
-    else ubicaciones.push({ codigo: c.ubicacion, cantidad: c.cantidad });
+  let html = `<div class="info-box"><strong>${escapeHtml(prod.codigo)}</strong><br>${escapeHtml(prod.desc)}<br><span style="font-size:.72rem">Stock: ${prod.stock}</span></div>`;
+  const ubic = [];
+  conts.forEach(c => { const u = ubic.find(x => x.codigo === c.ubicacion); if(u) u.cantidad += c.cantidad; else ubic.push({ codigo:c.ubicacion, cantidad:c.cantidad }); });
+  conteos.forEach(c => { if(!ubic.find(x => x.codigo === c.ubicacion)) ubic.push({ codigo:c.ubicacion, cantidad:c.cantidad }); });
+  if(ubic.length === 0) return document.getElementById('cuResultado').innerHTML = html + '<div class="info-box error">⚠️ Sin ubicaciones.</div>';
+  html += '<h3 style="font-size:.72rem;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin:14px 0 8px">Ubicaciones actuales</h3>';
+  ubic.forEach((u, i) => {
+    html += `<div class="rec-row" style="margin-bottom:6px"><div style="display:flex;justify-content:space-between;align-items:center;gap:8px"><div style="flex:1"><strong style="color:var(--yellow);font-size:.85rem">${escapeHtml(u.codigo)}</strong><div style="font-size:.7rem;color:var(--muted)">Disponible: ${u.cantidad}</div></div><div style="display:flex;gap:4px;align-items:center"><input type="number" min="0" max="${u.cantidad}" value="0" id="cuMove-${i}" style="width:70px;padding:6px;background:#0f0f18;border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:.85rem;text-align:right"><button class="btn btn-ghost btn-sm" onclick="document.getElementById('cuMove-${i}').value=${u.cantidad}">Todo</button></div></div><input type="hidden" id="cuUbi-${i}" value="${escapeAttr(u.codigo)}"></div>`;
   });
-  conteos.forEach(c => {
-    if(!ubicaciones.find(x => x.codigo === c.ubicacion)) ubicaciones.push({ codigo: c.ubicacion, cantidad: c.cantidad });
-  });
-
-  if(ubicaciones.length === 0){
-    html += '<div class="info-box error">⚠️ Sin ubicaciones registradas.</div>';
-    document.getElementById('cuResultado').innerHTML = html;
-    return;
-  }
-
-  html += '<h3 style="font-size:.72rem;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin:14px 0 8px">Ubicaciones actuales · selecciona cuánto mover</h3>';
-
-  ubicaciones.forEach((u, i) => {
-    html += `<div class="rec-row" style="margin-bottom:6px">
-      <div style="display:flex;justify-content:space-between;align-items:center;gap:8px">
-        <div style="flex:1;min-width:0">
-          <strong style="color:var(--yellow);font-size:.85rem">${escapeHtml(u.codigo)}</strong>
-          <div style="font-size:.7rem;color:var(--muted);margin-top:2px">Disponible: ${u.cantidad}</div>
-        </div>
-        <div style="display:flex;gap:4px;align-items:center">
-          <input type="number" min="0" max="${u.cantidad}" value="0" id="cuMove-${i}" style="width:70px;padding:6px;background:#0f0f18;border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:.85rem;font-family:inherit;text-align:right">
-          <button class="btn btn-ghost btn-sm" onclick="document.getElementById('cuMove-${i}').value=${u.cantidad}">Todo</button>
-        </div>
-      </div>
-      <input type="hidden" id="cuUbi-${i}" value="${escapeAttr(u.codigo)}">
-    </div>`;
-  });
-
-  html += `<div class="field" style="margin-top:14px">
-    <label>Nueva ubicación destino</label>
-    <input id="cuDestino" placeholder="P1-A-R01-N01" style="text-transform:uppercase">
-  </div>
-  <button class="btn btn-primary" onclick="ejecutarCambioUbicacion('${prod.codigo}', ${ubicaciones.length})">🔄 Mover seleccionados</button>`;
-
+  html += `<div class="field" style="margin-top:14px"><label>Nueva ubicación destino</label><input id="cuDestino" style="text-transform:uppercase"></div><button class="btn btn-primary" onclick="ejecutarCambioUbicacion('${prod.codigo}',${ubic.length})">🔄 Mover</button>`;
   document.getElementById('cuResultado').innerHTML = html;
 }
-
-function ejecutarCambioUbicacion(codigo, totalUbis){
+function ejecutarCambioUbicacion(codigo, n){
   const destino = document.getElementById('cuDestino').value.trim().toUpperCase();
-  if(!destino) return toast('Ingresa ubicación destino','error');
-
+  if(!destino) return toast('Ingresa destino','error');
   const ubis = getUbicaciones();
-  if(!ubis.find(u => u.codigo === destino)){
-    ubis.push({
-      codigo: destino, piso: destino.split('-')[0] || 'P1', sector: destino.split('-')[1] || 'A',
-      rack: destino.split('-')[2] || 'RXX', nivel: destino.split('-')[3] || 'NXX',
-      distancia: 10, ficticia: false
-    });
-    setUbicaciones(ubis);
-  }
-
-  let movidos = 0;
+  if(!ubis.find(u => u.codigo === destino)){ ubis.push({ codigo:destino, distancia:10, ficticia:false }); setUbicaciones(ubis); }
+  let mov = 0;
   const conts = getContenedores();
   const conteos = getConteos();
-
-  for(let i = 0; i < totalUbis; i++){
-    const fromUbi = document.getElementById('cuUbi-' + i)?.value;
-    const cant = parseInt(document.getElementById('cuMove-' + i)?.value) || 0;
-    if(!fromUbi || cant <= 0) continue;
-
-    let porMover = cant;
+  for(let i = 0; i < n; i++){
+    const from = document.getElementById('cuUbi-'+i)?.value;
+    const cant = parseInt(document.getElementById('cuMove-'+i)?.value) || 0;
+    if(!from || cant <= 0) continue;
+    let por = cant;
     for(const c of conts){
-      if(porMover <= 0) break;
-      if(c.producto === codigo && c.ubicacion === fromUbi && c.cantidad > 0){
-        const sacar = Math.min(c.cantidad, porMover);
-        c.cantidad -= sacar;
-        const conts2 = getContenedores();
-        conts2.push({
-          codigo: 'C' + Date.now().toString().slice(-6) + Math.floor(Math.random()*100),
-          ubicacion: destino, producto: codigo, desc: c.desc, cantidad: sacar,
-          tipo: c.tipo, fecha: new Date().toISOString(), usuario: SESION.user,
-          movidoDesde: fromUbi
-        });
-        setContenedores(conts2);
-        porMover -= sacar;
-        movidos += sacar;
+      if(por <= 0) break;
+      if(c.producto === codigo && c.ubicacion === from && c.cantidad > 0){
+        const s = Math.min(c.cantidad, por); c.cantidad -= s; por -= s; mov += s;
+        conts.push({ codigo:'C'+Date.now().toString().slice(-6)+Math.floor(Math.random()*100), ubicacion:destino, producto:codigo, desc:c.desc, cantidad:s, tipo:c.tipo, fecha:new Date().toISOString(), usuario:SESION.user });
       }
     }
-
-    if(porMover > 0){
+    if(por > 0){
       for(const co of conteos){
-        if(porMover <= 0) break;
-        if(co.codigo === codigo && co.ubicacion === fromUbi && co.cantidad > 0){
-          const sacar = Math.min(co.cantidad, porMover);
-          co.cantidad -= sacar;
-          conteos.push({
-            codigo: codigo, desc: co.desc, cantidad: sacar,
-            ubicacion: destino, usuario: SESION.user, fecha: new Date().toISOString(),
-            movidoDesde: fromUbi
-          });
-          porMover -= sacar;
-          movidos += sacar;
+        if(por <= 0) break;
+        if(co.codigo === codigo && co.ubicacion === from && co.cantidad > 0){
+          const s = Math.min(co.cantidad, por); co.cantidad -= s; por -= s; mov += s;
+          conteos.push({ codigo, desc:co.desc, cantidad:s, ubicacion:destino, usuario:SESION.user, fecha:new Date().toISOString() });
         }
       }
     }
   }
-
-  setContenedores(conts);
-  setConteos(conteos);
-  toast(`✅ ${movidos} unidades movidas a ${destino}`, 'success');
+  setContenedores(conts); setConteos(conteos);
+  toast(`✓ ${mov} unidades a ${destino}`,'success');
   buscarParaMover();
 }
 
 /* ============================================================
-   HELPERS
+   ✍️ FIRMA CLIENTE
    ============================================================ */
+let firmaCtx = null, firmaDibujando = false, firmaTareaId = null;
+
+function renderFirmas(){
+  const cont = document.getElementById('listaFirmas');
+  const tareas = getTareas().filter(t =>
+    t.estado === 'completada' && !t.firmada && t.tipo !== 'transferencia'
+  );
+
+  if(tareas.length === 0){
+    cont.innerHTML = '<div class="empty"><div class="e-icon">✅</div><div>Sin entregas pendientes de firma</div></div>';
+    return;
+  }
+
+  cont.innerHTML = tareas.map(t => {
+    const tipoLbl = { boleta:'Boleta', factura:'Factura', ticket:'Ticket' }[t.tipo] || t.tipo;
+    const fecha = new Date(t.fechaCompletada || t.fecha || Date.now()).toLocaleString('es-CL', { day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit' });
+    return `<div class="firma-card" onclick="abrirFirmaCliente('${t.id}')">
+      <div class="fc-head">
+        <div><div class="fc-id">${escapeHtml(t.id)}</div><span class="fc-badge">${tipoLbl} · Pendiente firma</span></div>
+        <div style="text-align:right"><div style="font-size:1.1rem;font-weight:900">${(t.items||[]).length}</div><div style="font-size:.6rem;color:var(--muted);text-transform:uppercase">ítems</div></div>
+      </div>
+      <div class="fc-meta">
+        ${t.empresa ? `<strong>${escapeHtml(t.empresa)}</strong><br>` : ''}
+        ${t.numBoleta ? `Boleta: ${escapeHtml(t.numBoleta)}<br>` : ''}
+        ${t.numFactura ? `Factura: ${escapeHtml(t.numFactura)}<br>` : ''}
+        ${t.numOut ? `OUT: ${escapeHtml(t.numOut)}${t.numSO?' · SO: '+escapeHtml(t.numSO):''}<br>` : ''}
+        👤 ${escapeHtml(t.usuario||'—')} · 📅 ${fecha}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function abrirFirmaCliente(id){
+  const t = getTareas().find(x => x.id === id);
+  if(!t) return toast('Tarea no encontrada','error');
+  firmaTareaId = id;
+
+  openPanel('firmaCliente');
+  const cont = document.getElementById('firmaClienteCont');
+  const tipoLbl = { boleta:'Boleta', factura:'Factura', ticket:'Ticket' }[t.tipo] || t.tipo;
+
+  let html = `
+    <h2><span class="icon">✍️</span> Firma Cliente</h2>
+    <p class="help">Toma la firma del cliente para cerrar la entrega.</p>
+
+    <div class="info-box success">
+      <strong>${escapeHtml(t.id)}</strong> · ${tipoLbl}<br>
+      ${t.empresa ? `Cliente: <strong>${escapeHtml(t.empresa)}</strong><br>` : ''}
+      ${t.rut ? `RUT: ${escapeHtml(t.rut)}<br>` : ''}
+      ${t.numBoleta ? `Boleta: ${escapeHtml(t.numBoleta)}<br>` : ''}
+      ${t.numFactura ? `Factura: ${escapeHtml(t.numFactura)}<br>` : ''}
+      ${t.numOut ? `OUT: ${escapeHtml(t.numOut)}${t.numSO?' · SO: '+escapeHtml(t.numSO):''}<br>` : ''}
+      Total ítems: ${(t.items||[]).length}
+    </div>
+  `;
+
+  if(t.pdfBase64){
+    html += `<button class="btn btn-ghost btn-sm" style="width:100%;margin-top:10px" onclick="verPDFOriginal()">📄 Ver PDF original</button>`;
+  } else {
+    html += `<div class="info-box">⚠️ Esta tarea no tiene PDF original adjunto. Se generará un comprobante de firma.</div>`;
+  }
+
+  html += `
+    <div class="field" style="margin-top:14px">
+      <label>Nombre del cliente</label>
+      <input type="text" id="firmaNombre" placeholder="Ej: Juan Alberto Pérez" value="${escapeAttr(t.empresa || '')}">
+      <div style="font-size:.7rem;color:var(--muted);margin-top:4px">Se puede transcribir automáticamente desde el nombre de la empresa o escanear.</div>
+    </div>
+
+    <label style="display:block;font-size:.7rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin:16px 0 6px">Firma del cliente</label>
+    <canvas id="firmaCanvas" class="firma-canvas" width="600" height="200"></canvas>
+    <div style="display:flex;gap:6px;margin-top:6px">
+      <button class="btn btn-ghost btn-sm" style="flex:1" onclick="limpiarFirmaCliente()">🗑️ Limpiar</button>
+      <button class="btn btn-ghost btn-sm" style="flex:1" onclick="autocompletarNombre()">📝 Transcribir nombre</button>
+    </div>
+
+    <div class="timbre-preview">
+      <div class="tp-title">Recibido Conforme · Entrega VCA</div>
+      <div class="tp-nombre" id="tpNombre">Nombre del cliente</div>
+      <div class="tp-fecha" id="tpFecha">${new Date().toLocaleString('es-CL')}</div>
+      <div class="tp-user">Bodega: ${escapeHtml(SESION.user)}</div>
+    </div>
+
+    <div class="btn-row" style="margin-top:14px">
+      <button class="btn btn-ghost" onclick="openPanel('firmas')">Cancelar</button>
+      <button class="btn btn-success" onclick="guardarFirmaCliente()">✅ Timbrar y Guardar PDF</button>
+    </div>
+  `;
+
+  cont.innerHTML = html;
+  iniciarCanvasFirma();
+}
+
+function iniciarCanvasFirma(){
+  const canvas = document.getElementById('firmaCanvas');
+  if(!canvas) return;
+  firmaCtx = canvas.getContext('2d');
+  firmaCtx.strokeStyle = '#000';
+  firmaCtx.lineWidth = 2;
+  firmaCtx.lineCap = 'round';
+  firmaCtx.lineJoin = 'round';
+  firmaCtx.clearRect(0, 0, canvas.width, canvas.height);
+
+  const getPos = (e) => {
+    const rect = canvas.getBoundingClientRect();
+    const cx = e.touches ? e.touches[0].clientX : e.clientX;
+    const cy = e.touches ? e.touches[0].clientY : e.clientY;
+    return {
+      x: (cx - rect.left) * (canvas.width / rect.width),
+      y: (cy - rect.top) * (canvas.height / rect.height)
+    };
+  };
+
+  canvas.onmousedown = canvas.ontouchstart = (e) => {
+    e.preventDefault();
+    firmaDibujando = true;
+    const p = getPos(e);
+    firmaCtx.beginPath();
+    firmaCtx.moveTo(p.x, p.y);
+  };
+  canvas.onmousemove = canvas.ontouchmove = (e) => {
+    if(!firmaDibujando) return;
+    e.preventDefault();
+    const p = getPos(e);
+    firmaCtx.lineTo(p.x, p.y);
+    firmaCtx.stroke();
+  };
+  canvas.onmouseup = canvas.ontouchend = () => firmaDibujando = false;
+  canvas.onmouseleave = () => firmaDibujando = false;
+}
+
+function limpiarFirmaCliente(){
+  const canvas = document.getElementById('firmaCanvas');
+  if(canvas) firmaCtx.clearRect(0, 0, canvas.width, canvas.height);
+}
+
+function autocompletarNombre(){
+  const inp = document.getElementById('firmaNombre');
+  const t = getTareas().find(x => x.id === firmaTareaId);
+  if(!t) return;
+  if(t.empresa){
+    inp.value = t.empresa;
+    document.getElementById('tpNombre').textContent = t.empresa;
+    toast('Nombre transcrito','success');
+  } else {
+    toast('No hay nombre para transcribir','error');
+  }
+}
+
+function firmaVacia(){
+  const canvas = document.getElementById('firmaCanvas');
+  if(!canvas) return true;
+  const data = firmaCtx.getImageData(0, 0, canvas.width, canvas.height).data;
+  for(let i = 3; i < data.length; i += 4){
+    if(data[i] !== 0) return false;
+  }
+  return true;
+}
+
+async function guardarFirmaCliente(){
+  if(!firmaTareaId) return;
+  const nombre = document.getElementById('firmaNombre').value.trim();
+  if(!nombre) return toast('Ingresa nombre del cliente','error');
+  if(firmaVacia()) return toast('El cliente debe firmar','error');
+
+  const tareas = getTareas();
+  const t = tareas.find(x => x.id === firmaTareaId);
+  if(!t) return;
+
+  toast('Generando PDF firmado…');
+
+  try {
+    const firmaData = document.getElementById('firmaCanvas').toDataURL('image/png');
+    const fecha = new Date();
+
+    // Renderizar PDF original (si existe)
+    let paginasImgs = [];
+    if(t.pdfBase64){
+      try {
+        const base64Data = t.pdfBase64.split(',')[1];
+        const binary = atob(base64Data);
+        const bytes = new Uint8Array(binary.length);
+        for(let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+
+        const pdf = await pdfjsLib.getDocument({ data: bytes.buffer }).promise;
+        for(let i = 1; i <= pdf.numPages; i++){
+          const page = await pdf.getPage(i);
+          const viewport = page.getViewport({ scale: 1.5 });
+          const canvas = document.createElement('canvas');
+          canvas.width = viewport.width;
+          canvas.height = viewport.height;
+          const ctx = canvas.getContext('2d');
+          await page.render({ canvasContext: ctx, viewport: viewport }).promise;
+          paginasImgs.push(canvas.toDataURL('image/jpeg', 0.85));
+        }
+      } catch(e) {
+        console.warn('PDF original no se pudo leer:', e);
+      }
+    }
+
+    // Crear PDF con jsPDF
+    const { jsPDF } = window.jspdf;
+    const pdfOut = new jsPDF({ unit: 'mm', format: 'a4' });
+    const pgW = pdfOut.internal.pageSize.getWidth();
+    const pgH = pdfOut.internal.pageSize.getHeight();
+
+    // Agregar páginas del original
+    paginasImgs.forEach((img, i) => {
+      if(i > 0) pdfOut.addPage();
+      const ratio = pgW / 190;
+      pdfOut.addImage(img, 'JPEG', 10, 10, pgW - 20, 0, '', 'FAST');
+      // Ajuste de alto: usar imagen completa
+      const imgH = (pgW - 20) * 0.7;
+      pdfOut.addImage(img, 'JPEG', 10, 10, pgW - 20, imgH);
+    });
+
+    // Última página: comprobante de firma + timbre
+    pdfOut.addPage();
+    let y = 20;
+
+    pdfOut.setFontSize(16);
+    pdfOut.setFont(undefined, 'bold');
+    pdfOut.text('COMPROBANTE DE ENTREGA', pgW / 2, y, { align: 'center' });
+    y += 10;
+
+    pdfOut.setFontSize(11);
+    pdfOut.setFont(undefined, 'normal');
+    pdfOut.text('Recibido conforme', pgW / 2, y, { align: 'center' });
+    y += 12;
+
+    // Línea
+    pdfOut.setLineWidth(0.5);
+    pdfOut.line(20, y, pgW - 20, y);
+    y += 8;
+
+    pdfOut.setFontSize(10);
+    pdfOut.text(`Documento: ${t.id}`, 20, y);
+    y += 6;
+    if(t.numBoleta){ pdfOut.text(`N° Boleta: ${t.numBoleta}`, 20, y); y += 6; }
+    if(t.numFactura){ pdfOut.text(`N° Factura: ${t.numFactura}`, 20, y); y += 6; }
+    if(t.numOut){ pdfOut.text(`OUT: ${t.numOut}`, 20, y); y += 6; }
+    if(t.numSO){ pdfOut.text(`SO: ${t.numSO}`, 20, y); y += 6; }
+    if(t.empresa){ pdfOut.text(`Cliente: ${t.empresa}`, 20, y); y += 6; }
+    if(t.rut){ pdfOut.text(`RUT: ${t.rut}`, 20, y); y += 6; }
+    pdfOut.text(`Total ítems: ${(t.items||[]).length}`, 20, y);
+    y += 12;
+
+    // Timbre (recuadro)
+    pdfOut.setLineWidth(0.8);
+    pdfOut.rect(20, y, pgW - 40, 60);
+    pdfOut.setFontSize(9);
+    pdfOut.setFont(undefined, 'bold');
+    pdfOut.text('RECIBIDO CONFORME · ENTREGA VCA', pgW / 2, y + 8, { align: 'center' });
+    pdfOut.setFontSize(12);
+    pdfOut.text(nombre, pgW / 2, y + 20, { align: 'center' });
+    pdfOut.setFontSize(9);
+    pdfOut.setFont(undefined, 'normal');
+    pdfOut.text(`Fecha: ${fecha.toLocaleString('es-CL')}`, pgW / 2, y + 30, { align: 'center' });
+    pdfOut.text(`Bodega: ${SESION.user}`, pgW / 2, y + 38, { align: 'center' });
+
+    // Firma
+    try {
+      pdfOut.addImage(firmaData, 'PNG', pgW / 2 - 40, y + 42, 80, 15);
+    } catch(e) {}
+
+    y += 70;
+    pdfOut.setFontSize(8);
+    pdfOut.setTextColor(100);
+    pdfOut.text('Documento generado por Sistema Bodega VCA', pgW / 2, pgH - 10, { align: 'center' });
+
+    const pdfFinal = pdfOut.output('datauristring');
+
+    // Guardar en la tarea
+    t.pdfFirmado = pdfFinal;
+    t.firmada = true;
+    t.fechaFirmada = fecha.toISOString();
+    t.firmaCliente = firmaData;
+    t.nombreCliente = nombre;
+    t.firmadaPor = SESION.user;
+    setTareas(tareas);
+
+    toast('✅ PDF firmado y guardado','success');
+    openPanel('firmas');
+
+  } catch(e){
+    console.error(e);
+    toast('Error generando PDF: ' + e.message, 'error');
+  }
+}
+
+function verPDFOriginal(){
+  const t = getTareas().find(x => x.id === firmaTareaId);
+  if(!t || !t.pdfBase64) return toast('Sin PDF original','error');
+  const w = window.open();
+  w.document.write(`<iframe src="${t.pdfBase64}" style="width:100%;height:100vh;border:0"></iframe>`);
+}
+
+/* ============ HELPERS ============ */
 function escapeHtml(s){
   return String(s ?? '').replace(/[&<>"']/g, c => ({
     '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
@@ -2159,16 +1676,10 @@ function escapeHtml(s){
 }
 function escapeAttr(s){ return escapeHtml(s); }
 
-/* ============================================================
-   INIT
-   ============================================================ */
+/* ============ INIT ============ */
 window.addEventListener('DOMContentLoaded', () => {
   if(!cargarSesion()){
-    document.body.innerHTML =
-      '<div style="padding:40px;text-align:center;font-family:system-ui">' +
-      '<h2 style="margin-bottom:12px">Sin sesión activa</h2>' +
-      '<a href="index.html" style="color:#facc15">← Ir al login</a>' +
-      '</div>';
+    document.body.innerHTML = '<div style="padding:40px;text-align:center"><h2>Sin sesión activa</h2><a href="index.html" style="color:#facc15">← Ir al login</a></div>';
     return;
   }
   migrarDatos();
